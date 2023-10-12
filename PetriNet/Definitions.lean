@@ -53,12 +53,12 @@ def is_initial (n : PetriNet α β) (x : n.places) : Prop :=
 def is_final (n : PetriNet α β) (x : n.places) : Prop :=
   IsEmpty (x •ₚ)
 
-#eval Multiset.card {1,1,2}
+--Se define el conjunto de los estados habilitados
 
-def firing {n : PetriNet α β} (s : Set n.places) (t : n.transition) : Set n.places :=
+def enable {n : PetriNet α β} (s : Set n.places) (t : n.transition) : Prop :=
+ (•ₜ t) ⊆ s ∧ (t •ₜ)∩ s ⊆ (•ₜ t)
+
+ def firing {n : PetriNet α β} (s : Set n.places) (t : n.transition) : Set n.places :=
    (s ∩ (•ₜ t)ᶜ ) ∪ (t •ₜ)
 
-notation:3 lhs:3 "[" rhs:3 ">" => firing lhs rhs
-
-def enable (n : PetriNet α β) (s : n.states) : Set n.transition :=
-  {t : n.transition | ∃ s' : n.states, s[t⟩ = s'}
+notation:2 lhs:3 "[" rhs:4 "⟩" => firing lhs rhs
