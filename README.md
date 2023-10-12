@@ -1,5 +1,5 @@
 # PetriNet
-.[Lean project](https://leanprover-community.github.io) about Petri Net
+[Lean project](https://leanprover-community.github.io) about Petri Net
 
 # Dependences
 * Mathlib (https://github.com/leanprover-community/mathlib4)
