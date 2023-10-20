@@ -1,0 +1,170 @@
+\documentclass{article}
+\usepackage{relsize}
+\usepackage[utf8]{inputenc}  
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage[nottoc]{tocbibind}
+
+\newtheorem{defi}{def}
+\newtheorem{teo}{theorem}
+\newtheorem{lem}{lemma}
+\newtheorem{fun}{fun}
+\newcommand{\Tr}{\mathcal{T}}
+\newcommand{\Pl}{\mathcal{P}}
+\newcommand{\Rl}{\mathcal{R}}
+\newcommand{\St}{\mathcal{S}}
+\newcommand{\rev}[1]{\overset{\leftarrow}{#1}}
+\newcommand{\pres}[1]{^{\bullet}{#1}}
+\newcommand{\pos}[1]{{#1}^{\bullet}}
+
+\title{\textsc{Formalización de la matem\'atica y ciencias de la computación en asistentes de pruebas}\\[0.2em]\smaller{Propuesta: Formalización de Redes de Petri}
+}
+\author{Bernardo D\'avalos}
+
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+ Este proyecto busca establecer definiciones, enunciar lemas/proposiciones/ teoremas y probar dichos enunciados sobre redes de Petri reversibles usando el asistente de pruebas \textbf{Lean}, la cual pretende ser pionera en la comunidad de Lean y con el objetivo de ser un atajo al momento de investigar en este tema.
+\end{abstract}
+
+\section{Preliminares}
+
+Las redes de Petri son un sistema importante teórico para estudiar los estados de la computación, que puede depender de cómo se mire su uso. Podríamos restringir que estas redes sean de ocurrencia para estudiar las propiedades de los conflictos y reversibilidades \cite[p.~6-18]{reversing}, estas definiciones deberían poder llevarse a cabo ya que en \cite{prob} se define como conjuntos, y la librería \texttt{mathlib} otorgaría un atajo a este planteamiento.
+
+\section{Definiciones}
+
+Se define el conjunto de plazas $\mathcal P$ de tipo $Set \ \alpha$ y el conjunto de transiciones $\mathcal T$ de tipo $Set \ \beta$. El conjunto de estados es el conjunto potencia $\mathcal S=2^{\mathcal P}$ de tipo $Set \ Set \ \alpha$.
+
+\begin{defi}[Petri\_net] $N = (\mathcal P,\mathcal T,\mathcal R,s_0)$ \textbf{ where}
+
+$\begin{array}{lll}
+&  \Pl  		& --places\\
+&  \Tr  		& --transitions\\
+&  \mathcal R\subseteq (\Pl\times \Tr)\cup (\Tr\times \Pl) & --relation \\
+& s_0 \subseteq \mathcal P &--inital state
+\end{array}$
+\end{defi}
+
+
+\textbf{notation}: ls '$\prec$' rs $\Rightarrow$ $(ls,rs)\in R$ 
+
+\begin{fun}[Preset] \rm{Sea $p\in \mathcal P$ definimos el preset como} $^{\bullet}p := \{t\in \mathcal T|(t,p)\in R\}$.
+\end{fun}
+
+\textbf{infix} '$\bullet$' $=>$ PetriNet.preset
+
+\begin{fun}[Poset] \rm{Sea $p\in \mathcal P$ definimos el poset como} $ p^{\bullet} := \{t\in \mathcal T|(p,t)\in R\}$.
+\end{fun}
+
+
+\textbf{postfix} '$\bullet$' $=>$ PetriNet.poset
+
+
+\begin{fun}[Enabled\_transition] \rm{Para cada estado $s\in \mathcal S$ el conjunto de transiciones habilitadas está dada por} $en(s) := \{t \in \Tr | (\pres{t} \subset s) \wedge (\pos{t}\cap s\subset \pres{t})\}$.
+\end{fun}
+
+\begin{defi}[Deadlock] $s\in \mathcal \St$\rm{ está en deadlock si y sólo si } $en(s)=\emptyset$.
+
+\end{defi}
+
+%\textbf{notation} '$s[t\rangle$' $\Rightarrow fired \ s \ t$
+
+\begin{fun}[Fired\_transition]
+\rm{Dados un estado $s\in \St$ y una transición $t\in \Tr$ definimos la ejecución de $s$ a través de $t$ como $s[t\rangle =(s\setminus ^{\bullet}t)\cup t^{\bullet}$}.
+\end{fun}
+
+Denotamos el firing $s[t\rangle_N$ para especificar la red de Petri $N$ sobre la cual se ejecuta el estado y la transición.
+
+\begin{defi}[Firing sequence]\rm{Diremos que $s_0[t_1\rangle s_1[t_2\rangle\dots s_{n-1}[t_n\rangle s_n$ es una secuencia ordenada de ejecuciones, donde $t_i\in\Tr$, $s_i\in\St$ y $s_{i-1}[t_i\rangle = s_i$ para cada $i=1,\dots,n$ y $s_0$ es el estado inicial de $N$.
+ A esta secuencia de transiciones se denota por $t_1;\dots;t_n$.
+Denotamos $s_0[seq\rangle s_n$ (o $s_0[*\rangle s_n$) si existe una secuencia $seq=t_1;\dots;t_n$ tal que $s_0[t1\rangle s_1\dots  s_{n-1}[t_n\rangle s_n$ sea una secuencia de ejecuciones.}
+\end{defi}
+
+%\begin{fun}[Reachable]\rm{Dado un estado $s$ devuelve el conjunto de todos los estados posteriores, es decir, definimos de forma inductiva $$\begin{cases}reach(\emptyset)=\{\emptyset\} \\ reach(s)=\{s\}\cup \left(\displaystyle\bigcup_{t\in \Tr}reach(s[t\rangle)\right)\end{cases}$$}
+%\end{fun}
+
+Si $s_0$ es un estado inicial, $reach(s_0)$ retorna todos los estados posibles de una red de Petri.
+
+\begin{defi}[Conflict]\rm{Dos transiciones $t_1,t_2$ están en conflicto si } $ ^{\bullet}t_1\cap ^{\bullet}t_2=\emptyset$
+\end{defi}
+
+\textbf{notation:}80 $lhs:81$ " \# "  $rhs:80\Rightarrow$ Conflict lhs rhs
+
+\begin{defi}[Occurrence\_net]\rm{Una red de Petri $N$ es de ocurrencia si y solo si se cumplen las siguientes condiciones:} 
+\begin{itemize}
+	\item Es acíclica. 
+	\item Es 1-safe. 
+	\item $\displaystyle\bigcup_{p\in s_0}{^{\bullet}p}=\emptyset$.
+	\item No hay conflictos hacia atrás ($\forall a\in \Pl. |^{\bullet} a|\le 1$). 
+	\item No tiene auto-conflicto $(\forall t\in \Tr.\neg (t\# t))$.
+\end{itemize}
+\end{defi}
+
+\begin{defi}[Concurrent] \rm{Para cada $x,y\in \Pl\cup \Tr$, decimos que $x$ e $y$ son concurrentes si y solo si $ x\neq y\wedge \neg (x\prec y) \wedge \neg(y\prec x) \wedge \neg(x\# y)$}.
+\end{defi}
+
+
+\begin{lem} Sea $O$ una red de ocurrencia entonces $\forall t,t'\in en(s0) \leftrightarrow (co \ t \ t' \leftrightarrow ^{\bullet}t\cap ^{\bullet}t'=\emptyset)$
+\end{lem}
+
+\begin{defi}[Redes reversibles]
+\rm{Dada una red de Petri $N=(\Pl_{N},\Tr_N,R,s_0)$ su versión reversible es la red de Petri $\overset{\leftarrow}{N}=(\Pl_{\rev{N}},\rev{\Tr}_{\rev{N}},\rev{R},s_0)$, donde $\Pl_{\rev{N}}=\Pl_N$, $\Tr_{\rev{N}}=\Tr_N\cup\{\rev{t}|t\in \Tr_N\}$, y para cada $t\in \Tr_{\rev{N}}$ 
+$$^{\bullet}_{\rev{N}} t=\begin{cases}^{\bullet}_N t & si \ t\in \Tr_N \\ t^{\bullet}_N & si \ t\notin \Tr_N\end{cases} \qquad  t^{\bullet}_{\rev{N}}=\begin{cases} t^{\bullet}_N & si \ t\in \Tr_N \\ ^{\bullet}_Nt & si \ t\notin \Tr_N\end{cases}$$ 
+$\rev{R}$ es la clausura simétrica de $R$ (es decir, $\rev{R}$ es de equivalencia).}
+\end{defi}
+
+\section{Enunciados de proposiciones}
+
+\begin{lem}
+\text{Toda red de ocurrencia es reversible}
+\end{lem}
+
+\begin{lem}
+Sea $t;t'$ una traza de una red de ocurrencia reversible. Entonces $t \ co \ t'$ si y sólo si $\rev{t} \ co \ t'$.
+\end{lem}
+
+\begin{lem}
+Sea $O=(\Pl,\Tr,R,s_0)$ una red de ocurrencia, entonces para cada estado $s\in reach(O,s_0)$ tal que $\exists t\in \mathcal \Tr.s[t\rangle =s'$ implica que $s[t\rangle_O s' = s'[t\rangle_{\rev{O}} s$
+\end{lem}
+
+\begin{teo}
+Sea $O=(\Pl_O,\Tr,R,s_0)$ una red de ocurrencia. Entonces para cada $s\in\St$,
+$$s_0[*\rangle_O s_n \longleftrightarrow s_n[*\rangle_{\rev{O}} s_0$$
+\end{teo}
+
+%definir el unfolding de una red de petri (toda red de Petri se transforma en una red de ocurrencia)
+
+%\begin{teo}\text{morfismo que transforma la red de Petri en una red de ocurrencia}\end{teo}
+
+
+\begin{thebibliography}{9}
+
+\bibitem{reversing}
+  H. Melgratti, C. Antares, I. Ulidowski.
+  \textit{Reversing place transition nets},
+  Logical Methods in Computer Science,
+  1-28,
+  2020.
+
+\bibitem{prob}
+ J. Kaoten, D. Peled.
+  \textit{Taming confusion for modeling and implementing probabilistic concurrent systems.}
+
+\bibitem{lean}
+J. Avigad, P. Massot.
+ \textit{Mathematics in Lean},
+ 2023.
+
+\bibitem{isabelle}
+H. Lehmann, M. Leuschel,
+\textit{Inductive Theorem Proving by Program Specialisation:
+Generating proofs for Isabelle using Ecce},
+Department of Electronics and Computer Science,
+University of Southampton.
+
+\end{thebibliography}
+
+\end{document}
