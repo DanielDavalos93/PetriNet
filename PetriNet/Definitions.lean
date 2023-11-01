@@ -1,6 +1,6 @@
 import Mathlib.Data.Multiset.Basic
 import Mathlib.Data.Finset.Basic
-import Mathlib.Data.Finset.Powerset
+import Mathlib.Data.List.Basic
 import Mathlib.Data.Set.Basic
 import Mathlib.SetTheory.Cardinal.Basic
 import Mathlib.Tactic.Basic
@@ -64,9 +64,6 @@ def firing {n : PetriNet α β} (s : Set n.places) (t : enable (s)) : Set n.plac
   (Set.diff s (•ₜ t) ) ∪ (t •ₜ)
 
 notation:2 lhs:3 "[" rhs:4 "⟩" => firing lhs rhs
-
---Sucesion de ejecuciones
-
 /--def firing_seq {n : PetriNet α β} : ℕ →  Set (List ((Set n.places)×(n.transition)×(Set n.places)) )
   | 0   => {[]}                                                       --Lista vacia
   | 1   => {[(s, t, s[t⟩)] | (s : (Set n.places)) (t ∈ enable (s)) } --Estado inicial
@@ -80,5 +77,22 @@ def Firing {n : PetriNet α β} (s : Set n.places) (T : Set n.transition) : Set 
   (Set.diff s (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})) ∪  
   (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})
 
---lemma firing_eq {n : PetriNet α β} (s : Set n.places) (t : enable (s)) : 
---  firing s t = Firing (Set.singleton t.val) := by sorry
+lemma firing_eq1 {n : PetriNet α β} (s : Set n.places) (t : enable (s)) : 
+  firing s t = Firing s {t.val} := by sorry
+
+lemma firing_eq2 {n : PetriNet α β} (s : Set n.places) (t : enable (s)) :
+  firing s t = Firing s {↑ t} := by sorry
+
+--Pruebas con listas
+#eval ![1,2] 0
+#eval [1,2,3].tail
+#eval (([1,2,3].reverse).tail).reverse
+--Aux - listas
+def init {α : Type} (l : List α) : List α :=
+  ((l.reverse).tail).reverse
+
+--Lista de ejecuciones
+def firing_seq {n : PetriNet α β} (l : List n.transition) (s0 : Set n.places) : List (Set n.places) :=
+  List.scanl (Firing) s0 (List.map (Set.singleton) l)
+
+
