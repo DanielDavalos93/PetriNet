@@ -73,15 +73,17 @@ $\begin{array}{lll}
 %\textbf{notation} '$s[t\rangle$' $\Rightarrow fired \ s \ t$
 
 \begin{fun}[Fired\_transition]
-\rm{Dados un estado $s\in \St$ y una transición $t\in \Tr$ definimos la ejecución de $s$ a través de $t$ como $s[t\rangle =(s\setminus ^{\bullet}t)\cup t^{\bullet}$}.
+  \rm{Dados un estado $s\in \St$ y una transición $t\in en(s)$ definimos la ejecución de $s$ a través de $t$ como $s[t\rangle =(s\setminus ^{\bullet}t)\cup t^{\bullet}$}.
 \end{fun}
 
 Denotamos el firing $s[t\rangle_N$ para especificar la red de Petri $N$ sobre la cual se ejecuta el estado y la transición.
 
 \begin{defi}[Firing sequence]\rm{Diremos que $s_0[t_1\rangle s_1[t_2\rangle\dots s_{n-1}[t_n\rangle s_n$ es una secuencia ordenada de ejecuciones, donde $t_i\in\Tr$, $s_i\in\St$ y $s_{i-1}[t_i\rangle = s_i$ para cada $i=1,\dots,n$ y $s_0$ es el estado inicial de $N$.
- A esta secuencia de transiciones se denota por $t_1;\dots;t_n$.
-Denotamos $s_0[seq\rangle s_n$ (o $s_0[*\rangle s_n$) si existe una secuencia $seq=t_1;\dots;t_n$ tal que $s_0[t1\rangle s_1\dots  s_{n-1}[t_n\rangle s_n$ sea una secuencia de ejecuciones.}
+  A esta secuencia de transiciones se denota por una lista $[t_1,\dots,t_n]$.
+  Denotamos $s_0[seq\rangle s_n$ (o $s_0[*\rangle s_n$) si existe una secuencia $seq=[t_1,\dots,t_n]$ tal que $s_0[t1\rangle s_1\dots  s_{n-1}[t_n\rangle s_n$ sea una secuencia de ejecuciones.}
 \end{defi}
+
+
 
 %\begin{fun}[Reachable]\rm{Dado un estado $s$ devuelve el conjunto de todos los estados posteriores, es decir, definimos de forma inductiva $$\begin{cases}reach(\emptyset)=\{\emptyset\} \\ reach(s)=\{s\}\cup \left(\displaystyle\bigcup_{t\in \Tr}reach(s[t\rangle)\right)\end{cases}$$}
 %\end{fun}
