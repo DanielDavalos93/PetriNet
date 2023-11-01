@@ -80,5 +80,5 @@ def Firing {n : PetriNet α β} (s : Set n.places) (T : Set n.transition) : Set 
   (Set.diff s (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})) ∪  
   (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})
 
-lemma firing_eq {n : PetriNet α β} (s : Set n.places) (t : enable (s)) : 
-  firing s t = Firing (Set.singleton t.val) := by sorry
+--lemma firing_eq {n : PetriNet α β} (s : Set n.places) (t : enable (s)) : 
+--  firing s t = Firing (Set.singleton t.val) := by sorry
