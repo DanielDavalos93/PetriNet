@@ -9,16 +9,13 @@ import Mathlib.Tactic.LibrarySearch
 
 --Definicion de Redes de Petri
 structure PetriNet (α : Type) (β : Type) where
-  places : Finset α
+  places : Finset α 
   transition : Finset β
   rel_pt : places →  transition →  Prop
   rel_tp : transition →  places →  Prop
-  states : Set places
-  s₀ : Set places
-  
+  m₀ : Set places
 
-variable {α β : Type}
---#check PetriNet Nat Nat
+variable {α β : Type} (N : PetriNet α β)
 
 -- Preset - Poset
 
@@ -28,17 +25,17 @@ def Relation.image {α β : Type} (r : α →  β →  Prop) (a : α) : Set β :
 def Relation.pre_image {α β : Type} (r : α → β → Prop) (b : β) : Set α :=
     {a : α | r a b}
 
-def preset_p {n : PetriNet α β} (p : n.places) : Set n.transition  := 
+def preset_p {n : PetriNet α β} (p : n.places) : Set n.transition  :=
   Relation.pre_image n.rel_tp p
 
-def preset_t {n : PetriNet α β} (t : n.transition) : Set n.places  := 
+def preset_t {n : PetriNet α β} (t : n.transition) : Set n.places  :=
   Relation.pre_image n.rel_pt t
 
 prefix:1 "•ₚ" => preset_p
 prefix:2 "•ₜ" => preset_t
 
 def poset_p {n : PetriNet α β} (p : n.places) : Set n.transition :=
-  {t : n.transition | n.rel_tp t p} 
+  {t : n.transition | n.rel_tp t p}
 
 def poset_t {n : PetriNet α β} (t : n.transition) : Set n.places :=
   {p : n.places | n.rel_pt p t}
@@ -56,8 +53,11 @@ def is_final (n : PetriNet α β) (x : n.places) : Prop :=
 def enable {n : PetriNet α β} (s : Set n.places) : Set n.transition :=
  {t : n.transition | (•ₜ t) ⊆ s ∧ (t •ₜ)∩ s ⊆ (•ₜ t)}
 
+lemma enType {α β : Type} {N : PetriNet α β} (s : Set N.places) 
+    : ∀ t, (t ∈  enable (s) →  N.transition) := by sorry
+
 def deadlock {n : PetriNet α β} (s : Set n.places) : Prop :=
-  enable s = ∅ 
+  enable s = ∅
 
 --Firing
 def firing {n : PetriNet α β} (s : Set n.places) (t : enable (s)) : Set n.places :=
@@ -74,25 +74,25 @@ s₀ s₁=s₀[t⟩ .. sn
 --/
 
 def Firing {n : PetriNet α β} (s : Set n.places) (T : Set n.transition) : Set n.places :=
-  (Set.diff s (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})) ∪  
-  (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})
+  (Set.diff s (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})) ∪
+  (Set.sUnion {(t •ₜ) | t∈ T ∩ enable (s)})
 
-lemma firing_eq1 {n : PetriNet α β} (s : Set n.places) (t : enable (s)) : 
+universe u v
+def image {α : Type u} {β : Type v} (f: α →  β) (s : Set α) : Set β :=
+  {f x | x ∈ s}
+
+lemma firing_eq1 {n : PetriNet α β} (s : Set n.places) (t : enable (s)) :
   firing s t = Firing s {t.val} := by sorry
+--  by apply Set.ext ; intros x; exact ⟨fun h => show x ∈ Firing s {t.val} from  by rw [Firing s {t.val}], fun h => h⟩
+
 
 lemma firing_eq2 {n : PetriNet α β} (s : Set n.places) (t : enable (s)) :
   firing s t = Firing s {↑ t} := by sorry
 
---Pruebas con listas
-#eval ![1,2] 0
-#eval [1,2,3].tail
-#eval (([1,2,3].reverse).tail).reverse
 --Aux - listas
 def init {α : Type} (l : List α) : List α :=
   ((l.reverse).tail).reverse
 
 --Lista de ejecuciones
 def firing_seq {n : PetriNet α β} (l : List n.transition) (s0 : Set n.places) : List (Set n.places) :=
-  List.scanl (Firing) s0 (List.map (Set.singleton) l)
-
-
+  List.scanl (fun s t => Firing s (Set.singleton t)) s0 l
