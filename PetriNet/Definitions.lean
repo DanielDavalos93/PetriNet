@@ -5,11 +5,11 @@ import Mathlib.Data.Set.Basic
 import Mathlib.SetTheory.Cardinal.Basic
 import Mathlib.Tactic.Basic
 import Mathlib.Tactic.LibrarySearch
-
+import Mathlib.Tactic
 
 --Definicion de Redes de Petri
 structure PetriNet (α : Type) (β : Type) where
-  places : Finset α 
+  places : Finset α
   transition : Finset β
   rel_pt : places →  transition →  Prop
   rel_tp : transition →  places →  Prop
@@ -28,7 +28,7 @@ def Relation.pre_image {α β : Type} (r : α → β → Prop) (b : β) : Set α
 def preset_p {n : PetriNet α β} (p : n.places) : Set n.transition  :=
   Relation.pre_image n.rel_tp p
 
-def preset_t {n : PetriNet α β} (t : n.transition) : Set n.places  :=
+def preset_t {n : PetriNet α β} (t : n.transition) : Set n.places :=
   Relation.pre_image n.rel_pt t
 
 prefix:1 "•ₚ" => preset_p
@@ -43,21 +43,18 @@ def poset_t {n : PetriNet α β} (t : n.transition) : Set n.places :=
 postfix:1 "•ₚ" => poset_p
 postfix:2 "•ₜ" => poset_t
 
-def is_initial (n : PetriNet α β) (x : n.places) : Prop :=
-  IsEmpty (•ₚ x)
+def is_initial {n : PetriNet α β} (s : Set n.places) : Prop :=
+  IsEmpty (Set.sUnion {(•ₚ x) | x ∈  s})
 
-def is_final (n : PetriNet α β) (x : n.places) : Prop :=
-  IsEmpty (x •ₚ)
+def is_final {n : PetriNet α β} (s : Set n.places) : Prop :=
+  IsEmpty (Set.sUnion {(x •ₚ) | x ∈  s})
 
 --Se define el conjunto de los estados habilitados
 def enable {n : PetriNet α β} (s : Set n.places) : Set n.transition :=
  {t : n.transition | (•ₜ t) ⊆ s ∧ (t •ₜ)∩ s ⊆ (•ₜ t)}
 
-lemma enType {α β : Type} {N : PetriNet α β} (s : Set N.places) 
-    : ∀ t, (t ∈  enable (s) →  N.transition) := by sorry
-
 def deadlock {n : PetriNet α β} (s : Set n.places) : Prop :=
-  enable s = ∅
+  IsEmpty (enable s)
 
 --Firing
 def firing {n : PetriNet α β} (s : Set n.places) (t : enable (s)) : Set n.places :=
@@ -81,9 +78,15 @@ universe u v
 def image {α : Type u} {β : Type v} (f: α →  β) (s : Set α) : Set β :=
   {f x | x ∈ s}
 
-lemma firing_eq1 {n : PetriNet α β} (s : Set n.places) (t : enable (s)) :
-  firing s t = Firing s {t.val} := by sorry
---  by apply Set.ext ; intros x; exact ⟨fun h => show x ∈ Firing s {t.val} from  by rw [Firing s {t.val}], fun h => h⟩
+lemma firing_eq1 {n : PetriNet α β} (s : Set n.places) (t : enable s) :
+  firing s t = Firing s {↑t} := by sorry 
+  /-unfold firing Firing 
+  apply Iff.to_eq 
+  . intro x himp-/
+/-    unfold firing Firing enable 
+    apply Set.eq_of_subset_of_subset
+    intros x hx
+-/  
 
 
 lemma firing_eq2 {n : PetriNet α β} (s : Set n.places) (t : enable (s)) :
