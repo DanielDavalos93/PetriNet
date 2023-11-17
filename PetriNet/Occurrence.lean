@@ -2,6 +2,7 @@ import PetriNet.Definitions
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Finset.Basic
 
+set_option pp.proofs true
 --###################
 -- Relaciones y conjunto --
 variable {α β : Type}
@@ -18,11 +19,28 @@ variable {α β : Type}
    | base {x y : α} : r x y →  tranClos r x y
    | step {x y z : α} : r x y →  tranClos r y z →  tranClos r x z
 
-def predecesor {α β : Type} {N : PetriNet α β}
+@[reducible] def predecesor {α β : Type} {N : PetriNet α β}
   (x y : N.places ⊕  N.transition) :=
      (tranClos (flow N)) x y
 
 notation:1 l:1 "≺" r:2 => predecesor l r
+
+theorem pred_enable {N : PetriNet α β} (s : Set N.places) (t : N.transition) (h : enable s) (x : s) : (Sum.inr t) ≺ (Sum.inl x) := by sorry
+--    apply tranClos.base
+--  unfold predecesor
+--  unfold flow
+--  apply tranClos.step 
+  --apply tranClos.base
+ 
+ 
+lemma direct_flow {N : PetriNet α β}
+  {inlN : N.places →  N.places ⊕ N.transition}
+  {inrN : N.transition →  N.places ⊕ N.transition}
+  (p : N.places) (t : N.transition) : N.rel_pt p t →  ((inlN p) ≺ (inrN t)) := by sorry
+--    intro h 
+--    unfold predecesor 
+--    apply tranClos.base
+
 
 --###################
 --Redes de ocurrencia
@@ -32,7 +50,7 @@ def inmediate_conflict {N : PetriNet α β} (t₁ : N.transition) (t₂ : N.tran
 
 notation:5 l:5 "#₀" r:6 => inmediate_conflict l r
 
-def conflict {N : PetriNet α β} (x y : N.places ⊕ N.transition) : Prop :=
+def conflict {N : PetriNet α β} (x : N.places ⊕ N.transition) (y : N.places ⊕ N.transition) : Prop :=
  ∃ t₁ t₂ : N.transition, (Sum.inr t₁ ≺ x) ∧ (Sum.inr t₂ ≺ y) ∧ (t₁ #₀ t₂)
 
 notation:7 l:7 "#" r:8 => conflict l r
@@ -45,22 +63,20 @@ def backward_conflicts {N : PetriNet α β} (a : N.places) : Prop :=
 
 def occurrence_net (N : PetriNet α β) : Prop :=
  acyclic (N) ∧
+ (∀ t : N.transition, ¬ ((Sum.inr t) # (Sum.inr t))) ∧     --No hay autoconflicto
  is_initial (N.m₀) ∧
- ∀ a : N.places, ¬ (backward_conflicts (a)) ∧
- ∀ t : N.transition, ¬ ((Sum.inr t) # (Sum.inr t))      --No hay autoconflicto
-
-def concurrent {N : PetriNet α β} (x y : N.places ⊕  N.transition) : Prop :=
-  x ≠ y ∧  ¬(x ≺ y) ∧  ¬ (y ≺ x) ∧ ¬ (x # y)
+ (∀ a : N.places, ¬ (backward_conflicts (a))) 
 
 
+def concurrent {N : PetriNet α β} (x : N.places ⊕  N.transition) (y : N.places ⊕ N.transition) : Prop :=
+  (x ≠ y ∧  ¬(x ≺ y) ∧  ¬ (y ≺ x)) ∧ ¬ (x # y)
 
-lemma coinitial_conc {N : PetriNet α β} (s : Set N.places) (t t' : N.transition) (ho : occurrence_net N) (hen : {t, t'} ⊂  enable (s)) : 
-  (concurrent (Sum.inr t) (Sum.inr t') ↔  Disjoint (•ₜ t ) (•ₜ t') ) := by sorry
-/-  apply Iff.intro
-  . intro himp
-    exact 
-      have hConfl : ¬ ((Sum.inr t) # (Sum.inr t')) := by sorry
-      have hnegConfl : ¬ (t #₀ t') := by exact
-      show (Disjoint (•ₜ t) (•ₜ t')) from
-        And.right
-  . intro himp -/
+theorem coinitial_conc {N : PetriNet α β} (s : Set N.places) (t t' : N.transition) (ho : occurrence_net N) (hen : {t, t'} ⊂  enable (s)) (hconc : concurrent (Sum.inr t) (Sum.inr t')) : Disjoint (•ₜ t ) (•ₜ t') := by
+  by_cases h : Disjoint (•ₜ t) (•ₜ t')
+  . apply h
+  . have h₁ : ¬ (conflict (Sum.inr t) (Sum.inr t')) := (hconc.right)
+    have h₂ : ¬ (t #₀ t') := by sorry
+--      apply Iff.mpr (not_iff_false_intro h)
+    exact False.elim (h₂ h)
+    
+

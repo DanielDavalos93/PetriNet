@@ -18,8 +18,8 @@ def RelTransPlaces : MenoresQue4 → MenoresQue4 → Prop :=
     | 3 => p.1 = 3
     | _ => False
 
-lemma m₁ : Multiset MenoresQue4 := by
-  have s₀: Multiset MenoresQue4 := Multiset.zero
+lemma m₁ : Set MenoresQue4 := by
+  have s₀: Set MenoresQue4 := by exact Set.univ
   have zM: {x // x∈ MenoresQue4} := {val := 0, property := by simp}
   have uM: {x // x∈ MenoresQue4} := {val := 0, property := by simp}
   exact insert uM (insert zM (insert zM s₀))
