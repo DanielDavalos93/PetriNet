@@ -24,22 +24,13 @@ variable {α β : Type}
      (tranClos (flow N)) x y
 
 notation:1 l:1 "≺" r:2 => predecesor l r
-
-theorem pred_enable {N : PetriNet α β} (s : Set N.places) (t : N.transition) (h : enable s) (x : s) : (Sum.inr t) ≺ (Sum.inl x) := by sorry
---    apply tranClos.base
---  unfold predecesor
---  unfold flow
---  apply tranClos.step 
-  --apply tranClos.base
  
  
 lemma direct_flow {N : PetriNet α β}
   {inlN : N.places →  N.places ⊕ N.transition}
   {inrN : N.transition →  N.places ⊕ N.transition}
-  (p : N.places) (t : N.transition) : N.rel_pt p t →  ((inlN p) ≺ (inrN t)) := by sorry
---    intro h 
---    unfold predecesor 
---    apply tranClos.base
+  (p : N.places) (t : N.transition) (h : N.rel_pt p t) : ((inlN p) ≺ (inrN t)) := by sorry
+--    tranClos.step _
 
 
 --###################
@@ -75,8 +66,7 @@ theorem coinitial_conc {N : PetriNet α β} (s : Set N.places) (t t' : N.transit
   by_cases h : Disjoint (•ₜ t) (•ₜ t')
   . apply h
   . have h₁ : ¬ (conflict (Sum.inr t) (Sum.inr t')) := (hconc.right)
-    have h₂ : ¬ (t #₀ t') := by sorry
---      apply Iff.mpr (not_iff_false_intro h)
+    have h₂ : ¬ (t #₀ t') := by sorry 
     exact False.elim (h₂ h)
     
 

@@ -4,6 +4,7 @@ import Mathlib.Data.List.Basic
 import Mathlib.Data.Set.Basic
 import Mathlib.SetTheory.Cardinal.Basic
 
+
 --Definicion de Redes de Petri
 structure PetriNet (α : Type) (β : Type) where
   places : Finset α
@@ -54,7 +55,6 @@ lemma preset_implies_enable (N : PetriNet α β) (s : Set N.places) (t : N.trans
   t ∈ enable s → (•ₜ t) ⊆ s := by
   intros h_enable
   unfold enable at h_enable
-  simp only [Set.mem_setOf_eq, Set.mem_sUnion, Set.mem_preimage] at h_enable
   exact h_enable.left
 
 
@@ -66,47 +66,47 @@ def firing {n : PetriNet α β} (s : Set n.places) (t : enable (s)) : Set n.plac
   (Set.diff s (•ₜ t) ) ∪ (t •ₜ)
 
 notation:2 lhs:3 "[" rhs:4 "⟩" => firing lhs rhs
-/--def firing_seq {n : PetriNet α β} : ℕ →  Set (List ((Set n.places)×(n.transition)×(Set n.places)) )
-  | 0   => {[]}                                                       --Lista vacia
-  | 1   => {[(s, t, s[t⟩)] | (s : (Set n.places)) (t ∈ enable (s)) } --Estado inicial
-  | i+1 => let (_,_,s) := seq[i-1] in
-          {seq ++ [(s, t, s[t⟩)] | (seq : firing_seq (i)) (t ∈ enable (s))} --Paso recursivo
-[t1,..,tn]
-s₀ s₁=s₀[t⟩ .. sn
---/
 
+--Firing as a set
 def Firing {n : PetriNet α β} (s : Set n.places) (T : Set n.transition) : Set n.places :=
   (Set.diff s (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})) ∪
   (Set.sUnion {(t •ₜ) | t∈ T ∩ enable (s)})
 
 
 lemma firing_eq1 {n : PetriNet α β} (s : Set n.places) (t : enable s) :
-  firing s t = Firing s {↑t} := by sorry
+  firing s t = Firing s {t.val} := by sorry
 --    unfold firing Firing
 --    ext x
---  simp only [Set.mem_union, Set.mem_diff, Set.mem_sUnion, Set.mem_image]
---    apply Iff.intro
---      cases h
---      | inl h => simp [h]
---      apply simp [h] ; exact ⟨t, h_w, h_h.left⟩ 
---    . intro h 
---      cases h 
---      | left => simp [h]
---      | right => exact ⟨h_w, h_h⟩
-
+    
 
 lemma firing_eq2 {n : PetriNet α β} (s : Set n.places) (t : enable (s)) :
   firing s t = Firing s {↑ t} := by 
     exact firing_eq1 s t
 
 
+lemma IsEmpty_to_empty {α : Type} (s : Set α) (h : IsEmpty s) : s = ∅  := 
+  Iff.mp Set.isEmpty_coe_sort h
+
+lemma no_enable_pres_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.transition) (h : t ∉ enable (s)) : {(•ₜ y) | y∈ {↑t}∩ enable (s)} = ∅ := 
+    have h1 : IsEmpty {(•ₜ y) | y∈ {↑t}∩ enable (s)} := by aesop
+    calc {(•ₜ y) | y∈ {↑t}∩ enable (s)} = ∅  := by apply IsEmpty_to_empty _ h1
+
+lemma no_enable_pos_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.transition) (h : t ∉ enable (s)) : {(y •ₜ) | y∈ {↑t}∩ enable (s)} = ∅  := by 
+    exact no_enable_pres_to_emp s t h
+
+--Propiedad : si una transición no está habilitada en un estado s 
+--entonces el firing es la identidad (no se ejecuta)
+theorem no_enable_to_id {N : PetriNet α β} (s : Set N.places) (t : N.transition) (h : t∉ enable (s)) : Firing s {↑t} = s :=
+    calc Firing s {↑t} = (s\(Set.sUnion {(•ₜ y) | y∈ {↑t} ∩ enable (s)})) ∪ (Set.sUnion {(y •ₜ) | y∈ {↑t} ∩ enable (s)})  := rfl
+      _ = (s \ ∅ ) ∪ (Set.sUnion {(y •ₜ) | y∈ {↑t} ∩ enable (s)}) := by rw [no_enable_pres_to_emp s t h] ; simp
+      _ = (s \ ∅ ) ∪ ∅  := by rw [no_enable_pos_to_emp s t h] ; simp
+      _ = (s \ ∅ )      := Set.union_empty (s\∅ )
+      _ = s             := Set.diff_empty
+
+
 --Aux - listas
 def init {α : Type} (l : List α) : List α :=
   ((l.reverse).tail).reverse
-
-def L1 := ["a","b","c"]
-#eval List.length L1
-#eval List.get! L1 2
 
 --Lista de ejecuciones
 /-`firing_seq s0 l` pide una lista e transiciones `l` y un estado inicial `s0`
