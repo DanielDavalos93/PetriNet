@@ -66,7 +66,6 @@ theorem coinitial_conc {N : PetriNet α β} (s : Set N.places) (t t' : N.transit
   by_cases h : Disjoint (•ₜ t) (•ₜ t')
   . apply h
   . have h₁ : ¬ (conflict (Sum.inr t) (Sum.inr t')) := (hconc.right)
-    have h₂ : ¬ (t #₀ t') := by sorry 
-    exact False.elim (h₂ h)
-    
-
+    have h₂ : ¬ (Sum.inr t # Sum.inr t') := Iff.mp (iff_false_intro h₁)
+    have h₃ : ¬ (t #₀ t')  := by sorry --unfold inmediate_conflict <;> simp <;> with_unfolding_all
+    exact absurd h h₃ 

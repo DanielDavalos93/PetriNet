@@ -75,8 +75,15 @@ def Firing {n : PetriNet α β} (s : Set n.places) (T : Set n.transition) : Set 
 
 lemma firing_eq1 {n : PetriNet α β} (s : Set n.places) (t : enable s) :
   firing s t = Firing s {t.val} := by sorry
---    unfold firing Firing
---    ext x
+/-    unfold firing Firing
+    apply Set.ext
+    intro x
+    apply Iff.intro
+    (
+      intro h
+      cases h --; simp [Set.mem_diff] --, Set.mem_singleton]
+    )
+-/
     
 
 lemma firing_eq2 {n : PetriNet α β} (s : Set n.places) (t : enable (s)) :
