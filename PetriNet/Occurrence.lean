@@ -2,10 +2,24 @@ import PetriNet.Definitions
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Finset.Basic
 
-set_option pp.proofs true
---###################
--- Relaciones y conjunto --
+/-
+This file provides the definitions and properties necessary to construct a flow 
+relationship in a Petri net. Which is necessary to establish occurrence nets.
+
+A flow `≺ ` [abr: \prec] is a relationship between places and transitions directly. 
+Their transitive closure `≼ ` [abr: \preceq] is given by `tranClos` and his construction 
+by `predecesor`. 
+
+  * If N is a `PetriNet α β`, and you want to write that x ≺ y, we need to know if x, y 
+are places or transitions. 
+  For example, if `x : N.transition` and `y : N.places`, then x ≺  y is equivalent to 
+  `Sum.inr x ≺ Sum.inl y`. Is not necessary that x and y have different types, we can 
+  have `x y : N.transition` and `Sum.inr x ≺ Sum.inr y`, since is a transitive closure. 
+  Trichotomy is not true over this transitive closure.
+-/
+
 variable {α β : Type}
+
 
 --Flujo de dependencia causal
 @[reducible] def flow (N : PetriNet α β) :
@@ -13,6 +27,8 @@ variable {α β : Type}
     | Sum.inl p, Sum.inr t  => N.rel_pt p t
     | Sum.inr t, Sum.inl p  => N.rel_tp t p
     | _, _                  => false
+
+notation:1 l:1 "≺ " r:2 => flow _ l r
 
 --Clausura transitiva
 @[reducible] inductive tranClos (r : α →  α →  Prop) : α →  α →  Prop
@@ -23,23 +39,22 @@ variable {α β : Type}
   (x y : N.places ⊕  N.transition) :=
      (tranClos (flow N)) x y
 
-notation:1 l:1 "≺" r:2 => predecesor l r
+notation:3 l:3 "≼ " r:4 => predecesor l r
  
  
 lemma direct_flow {N : PetriNet α β}
   {inlN : N.places →  N.places ⊕ N.transition}
   {inrN : N.transition →  N.places ⊕ N.transition}
-  (p : N.places) (t : N.transition) (h : N.rel_pt p t) : ((inlN p) ≺ (inrN t)) := by sorry
+  (p : N.places) (t : N.transition) (h : N.rel_pt p t) : ((inlN p) ≼  (inrN t)) := by sorry
 --    tranClos.step _
 
 
---###################
---Redes de ocurrencia
 def inmediate_conflict {N : PetriNet α β} (t₁ : N.transition) (t₂ : N.transition) :
   Prop :=
     ¬ (Disjoint (•ₜ t₁) (•ₜ t₂))
 
 notation:5 l:5 "#₀" r:6 => inmediate_conflict l r
+
 
 def conflict {N : PetriNet α β} (x : N.places ⊕ N.transition) (y : N.places ⊕ N.transition) : Prop :=
  ∃ t₁ t₂ : N.transition, (Sum.inr t₁ ≺ x) ∧ (Sum.inr t₂ ≺ y) ∧ (t₁ #₀ t₂)
@@ -52,15 +67,15 @@ def acyclic (N : PetriNet α β) : Prop :=
 def backward_conflicts {N : PetriNet α β} (a : N.places) : Prop :=
   ∃ t₁ t₂ : N.transition, (t₁ ≠ t₂) ∧  (t₁ ∈  (•ₚ a)) ∧  (t₂ ∈  (•ₚ a))
 
+--Occurrence net
 def occurrence_net (N : PetriNet α β) : Prop :=
  acyclic (N) ∧
  (∀ t : N.transition, ¬ ((Sum.inr t) # (Sum.inr t))) ∧     --No hay autoconflicto
  is_initial (N.m₀) ∧
  (∀ a : N.places, ¬ (backward_conflicts (a))) 
 
-
 def concurrent {N : PetriNet α β} (x : N.places ⊕  N.transition) (y : N.places ⊕ N.transition) : Prop :=
-  (x ≠ y ∧  ¬(x ≺ y) ∧  ¬ (y ≺ x)) ∧ ¬ (x # y)
+  (x ≠ y ∧  ¬(x ≼  y) ∧  ¬ (y ≼  x)) ∧ ¬ (x # y)
 
 theorem coinitial_conc {N : PetriNet α β} (s : Set N.places) (t t' : N.transition) (ho : occurrence_net N) (hen : {t, t'} ⊂  enable (s)) (hconc : concurrent (Sum.inr t) (Sum.inr t')) : Disjoint (•ₜ t ) (•ₜ t') := by
   by_cases h : Disjoint (•ₜ t) (•ₜ t')
