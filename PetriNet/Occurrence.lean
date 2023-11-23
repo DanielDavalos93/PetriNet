@@ -45,19 +45,20 @@ notation:1 l:1 "≺ " r:2 => flow _ l r
    | base {x y : α} : r x y →  tranClos r x y
    | step {x y z : α} : r x y →  tranClos r y z →  tranClos r x z
 
-@[reducible] def predecesor {α β : Type} {N : PetriNet α β}
-  (x y : N.places ⊕  N.transition) :=
+@[reducible] def predecesor {α β : Type} {N : PetriNet α β} (x y : N.places ⊕  N.transition) : Prop :=
      (tranClos (flow N)) x y
 
 notation:3 l:3 "≼ " r:4 => predecesor l r
- 
- 
-lemma direct_flow {N : PetriNet α β}
-  {inlN : N.places →  N.places ⊕ N.transition}
-  {inrN : N.transition →  N.places ⊕ N.transition}
-  (p : N.places) (t : N.transition) (h : N.rel_pt p t) : ((inlN p) ≼  (inrN t)) := by sorry
---    tranClos.step _
 
+--A relation (p,t) implies p ≺ t 
+lemma rel_pt_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition} (h : N.rel_pt p t) :
+  flow N (Sum.inl p) (Sum.inr t) := by 
+   exact h 
+
+--A relation (t,p) implies t≺ p
+lemma rel_tp_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition} (h : N.rel_tp t p) :
+  flow N (Sum.inr t) (Sum.inl p) := by 
+   exact h
 
 def inmediate_conflict {N : PetriNet α β} (t₁ : N.transition) (t₂ : N.transition) :
   Prop :=
@@ -80,10 +81,15 @@ cyclic. Otherwise (there is not i such that xᵢ=x ) we call it acyclical.
 def acyclic (N : PetriNet α β) : Prop :=
   ∀ x : N.places ⊕  N.transition , ¬ (x ≼ x)
 
-def backward_conflicts {N : PetriNet α β} (a : N.places) : Prop :=
-  ∃ t₁ t₂ : N.transition, (t₁ ≠ t₂) ∧  (t₁ ∈  (•ₚ a)) ∧  (t₂ ∈  (•ₚ a))
 
---Occurrence net
+/-!
+There is at least two transitions in the preset from place `a`.
+-/
+def backward_conflicts {N : PetriNet α β} (a : N.places) : Prop :=
+  Multiset.card {(•ₚ a)} ≥ 2
+
+
+--## Occurrence net
 def occurrence_net (N : PetriNet α β) : Prop :=
  acyclic (N) ∧
  (∀ t : N.transition, ¬ ((Sum.inr t) # (Sum.inr t))) ∧     --No hay autoconflicto
@@ -104,6 +110,11 @@ def concurrent_set {N : PetriNet α β} (X : Set (N.places ⊕ N.transition)) : 
 
 notation:11 "CO" var:11 => concurrent_set var
 
+/-!
+# Coinitial concurrent theorem 
+This theorem states that if t and t' are concurrent, plus t and t' are enabled in some 
+state s, then there is no immediate conflict.
+-/
 theorem coinitial_conc {N : PetriNet α β} (s : Set N.places) (t t' : N.transition) (ho : occurrence_net N) (hen : {t, t'} ⊂  enable (s)) (hconc : concurrent (Sum.inr t) (Sum.inr t')) : Disjoint (•ₜ t ) (•ₜ t') := by
   by_cases h : Disjoint (•ₜ t) (•ₜ t')
   . apply h
