@@ -15,6 +15,8 @@ time to defined the flow relationship, because we can have x,y ∈ N with x ≼ 
 instance) regardless of whether x and y are the same type or not. This disjoint union
 I write as `places ⊕ transition`.
 
+## Notation
+
   * If N is a `PetriNet α β`, and you want to write that x ≺ y, we need to know if x, y 
 are places or transitions. 
   For example, if `x : N.transition` and `y : N.places`, then x ≺  y is equivalent to 
@@ -28,10 +30,11 @@ are places or transitions.
   * `CO X` is an abreviature if ∀ x y ∈  X, x co y.
 -/
 
+
+namespace Flow
+
 variable {α β : Type}
 
-
---Flujo de dependencia causal
 @[reducible] def flow (N : PetriNet α β) :
     (N.places ⊕  N.transition) →  (N.places ⊕  N.transition) →  Prop
     | Sum.inl p, Sum.inr t  => N.rel_pt p t
@@ -55,10 +58,19 @@ lemma rel_pt_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition} (h :
   flow N (Sum.inl p) (Sum.inr t) := by 
    exact h 
 
+#align rel_pt_to_flow Flow.rel_pt_to_flow
+
 --A relation (t,p) implies t≺ p
 lemma rel_tp_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition} (h : N.rel_tp t p) :
   flow N (Sum.inr t) (Sum.inl p) := by 
    exact h
+
+#align rel_tp_to_flow Flow.rel_tp_to_flow
+
+end Flow
+
+
+namespace OccurrenceNet
 
 def inmediate_conflict {N : PetriNet α β} (t₁ : N.transition) (t₂ : N.transition) :
   Prop :=
@@ -115,9 +127,15 @@ notation:11 "CO" var:11 => concurrent_set var
 This theorem states that if t and t' are concurrent, plus t and t' are enabled in some 
 state s, then there is no immediate conflict.
 -/
-theorem coinitial_conc {N : PetriNet α β} (s : Set N.places) (t t' : N.transition) (ho : occurrence_net N) (hen : {t, t'} ⊂  enable (s)) (hconc : concurrent (Sum.inr t) (Sum.inr t')) : Disjoint (•ₜ t ) (•ₜ t') := by
+theorem coinitial_conc {N : PetriNet α β} (s : Set N.places) (t t' : N.transition) 
+  (ho : occurrence_net N) (hen : {t, t'} ⊂  enable (s)) (hconc : concurrent (Sum.inr t) (Sum.inr t')) : 
+  Disjoint (•ₜ t ) (•ₜ t') := by
   by_cases h : Disjoint (•ₜ t) (•ₜ t')
   . apply h
   . have h₁ : ¬ (conflict (Sum.inr t) (Sum.inr t')) := (hconc.right)
     have h₂ : ¬ (t #₀ t') := by sorry
     exact absurd h h₂
+
+#align coinitial_conc OccurrenceNet.coinitial_conc
+
+end OccurrenceNet
