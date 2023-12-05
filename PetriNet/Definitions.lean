@@ -108,7 +108,7 @@ def deadlock {n : PetriNet α β} (s : Set n.places) : Prop :=
 
 -- Firing
 def firing {n : PetriNet α β} (s : Set n.places) (t : enable (s)) : Set n.places :=
-  (s \ (•ₜ t) ) ∪ (t •ₜ)
+  (Set.diff s (•ₜ t) ) ∪ (t •ₜ)
 
 notation:2 lhs:3 "[" rhs:4 "⟩" => firing lhs rhs
 
@@ -119,7 +119,7 @@ notation:5 ls:5 "[" ts:6 "⟩" ls':7 => is_firing ls ts ls'
 
 -- Firing as a set
 def Firing {n : PetriNet α β} (s : Set n.places) (T : Set n.transition) : Set n.places :=
-  (s \ (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})) ∪
+  (Set.diff s (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})) ∪
   (Set.sUnion {(t •ₜ) | t∈ T ∩ enable (s)})
 
 /-!
@@ -145,7 +145,7 @@ lemma firing_eq1 {n : PetriNet α β} (s : Set n.places) (t : enable s) :
         right
         simp ; exact h
     . intro h 
-      simp only [Set.mem_inter_iff, Set.mem_singleton_iff, and_assoc] at h
+      simp only [Set.mem_inter_iff, Set.mem_singleton_iff, and_assoc] at h 
       cases h 
       case inl h =>
         left 
@@ -166,11 +166,13 @@ lemma IsEmpty_to_empty {α : Type} (s : Set α) (h : IsEmpty s) : s = ∅  :=
   Iff.mp Set.isEmpty_coe_sort h
 
 
-lemma no_enable_preset_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.transition) (h : t ∉ enable (s)) : {(•ₜ y) | y∈ {↑t}∩ enable (s)} = ∅ := 
+lemma no_enable_preset_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.transition) 
+  (h : t ∉ enable (s)) : {(•ₜ y) | y∈ {↑t}∩ enable (s)} = ∅ := 
     have h1 : IsEmpty {(•ₜ y) | y∈ {↑t}∩ enable (s)} := by aesop
     calc {(•ₜ y) | y∈ {↑t}∩ enable (s)} = ∅  := by apply IsEmpty_to_empty _ h1
 
-lemma no_enable_poset_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.transition) (h : t ∉ enable (s)) : {(y •ₜ) | y∈ {↑t}∩ enable (s)} = ∅ := 
+lemma no_enable_poset_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.transition) 
+  (h : t ∉ enable (s)) : {(y •ₜ) | y∈ {↑t}∩ enable (s)} = ∅ := 
     have h1 : IsEmpty {(y •ₜ) | y∈ {↑t}∩ enable (s)} := by aesop
     calc {(y •ₜ) | y∈ {↑t}∩ enable (s)} = ∅  := by apply IsEmpty_to_empty _ h1
 
@@ -179,8 +181,10 @@ lemma no_enable_poset_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.tran
 This theorem says that if a transition `t` isn't enabled in a state `s` then the execution
 on `firing s t` is the identity (i.e. there is no execution)
 -/
-theorem no_enable_to_id {N : PetriNet α β} (s : Set N.places) (t : N.transition) (h : t∉ enable (s)) : Firing s {↑t} = s :=
-    calc Firing s {↑t} = (s\(Set.sUnion {(•ₜ y) | y∈ {↑t} ∩ enable (s)})) ∪ (Set.sUnion {(y •ₜ) | y∈ {↑t} ∩ enable (s)})  := rfl
+theorem no_enable_to_id {N : PetriNet α β} (s : Set N.places) (t : N.transition) 
+  (h : t∉ enable (s)) : Firing s {↑t} = s :=
+    calc Firing s {↑t} = (s\(Set.sUnion {(•ₜ y) | y∈ {↑t} ∩ enable (s)})) ∪ 
+          (Set.sUnion {(y •ₜ) | y∈ {↑t} ∩ enable (s)})  := rfl
       _ = (s \ ∅ ) ∪ (Set.sUnion {(y •ₜ) | y∈ {↑t} ∩ enable (s)}) := by rw [no_enable_preset_to_emp s t h] ; simp
       _ = (s \ ∅ ) ∪ ∅  := by rw [no_enable_poset_to_emp s t h] ; simp
       _ = (s \ ∅ )      := Set.union_empty (s\∅ )
@@ -198,7 +202,8 @@ returns a list of states, whenever they are enabled in their respective executio
 Such as: l=[t1,t2], s0={p1,p2}, s1=s[t1⟩={p3,p2} y s2=s[t2⟩={p3,p4} then 
 `firing_seq s0 l = [s1,s2]`
 -/
-@[simp] def firing_seq {N : PetriNet α β} (s0 : Set N.places)  (l : List N.transition) : List (Set N.places) :=
+@[simp] def firing_seq {N : PetriNet α β} (s0 : Set N.places)  (l : List N.transition) 
+  : List (Set N.places) :=
   List.scanl (fun s t => Firing s (Set.singleton t)) s0 l
 
 --Concatenation of executions
@@ -207,7 +212,8 @@ state of that sequence, whenever they are enabled.
 With the previous example:
 `firing l s0 = s2`
 -/
-def firing_concat {N : PetriNet α β} (s0 : Set N.places) (l : List N.transition) : Set N.places :=
+@[simp] def firing_concat {N : PetriNet α β} (s0 : Set N.places) (l : List N.transition) 
+  : Set N.places :=
   let firing_list := firing_seq s0 l
   let n := List.length firing_list
   List.get! firing_list (n-1)
