@@ -54,16 +54,27 @@ notation:1 l:1 "≺ " r:2 => flow _ l r
 notation:3 l:3 "≼ " r:4 => predecesor l r
 
 --A relation (p,t) implies p ≺ t 
-lemma rel_pt_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition} (h : N.rel_pt p t) :
-  flow N (Sum.inl p) (Sum.inr t) := by 
+lemma rel_pt_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition} 
+  (h : N.rel_pt p t) : flow N (Sum.inl p) (Sum.inr t) := by 
    exact h 
 
 #align rel_pt_to_flow Flow.rel_pt_to_flow
 
 --A relation (t,p) implies t≺ p
-lemma rel_tp_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition} (h : N.rel_tp t p) :
-  flow N (Sum.inr t) (Sum.inl p) := by 
+lemma rel_tp_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition} 
+  (h : N.rel_tp t p) : flow N (Sum.inr t) (Sum.inl p) := by 
    exact h
+
+--A relation (p,t) implies p ≼  t 
+lemma rel_pt_to_pred {N : PetriNet α β} {p : N.places} {t : N.transition} 
+  (h : N.rel_pt p t) : Sum.inl p ≼  Sum.inr t := by exact tranClos.base h
+
+
+#align rel_pt_to_pred Flow.rel_pt_to_pred
+
+--A relation (t,p) implies t≼  p
+lemma rel_tp_to_pred {N : PetriNet α β} {p : N.places} {t : N.transition} 
+  (h : N.rel_tp t p) : Sum.inr t ≼  Sum.inl p := by exact tranClos.base h
 
 #align rel_tp_to_flow Flow.rel_tp_to_flow
 
@@ -80,7 +91,7 @@ notation:5 l:5 "#₀" r:6 => inmediate_conflict l r
 
 
 def conflict {N : PetriNet α β} (x : N.places ⊕ N.transition) (y : N.places ⊕ N.transition) : Prop :=
- ∃ t₁ t₂ : N.transition, (Sum.inr t₁ ≼  x) ∧ (Sum.inr t₂ ≼  y) ∧ (t₁ #₀ t₂)
+ ∃ t₁ t₂ : N.transition, ((Sum.inr t₁ ≼  x) ∧ (Sum.inr t₂ ≼  y) ∧ (t₁ #₀ t₂))
 
 notation:7 l:7 "#" r:8 => conflict l r
 
@@ -113,7 +124,7 @@ The idea of the concurrent definition is that there is no conflict in the entire
 relationship path (i.e. a conflict between two transitions affects their predecessors).
 -/
 def concurrent {N : PetriNet α β} (x : N.places ⊕  N.transition) (y : N.places ⊕ N.transition) : Prop :=
-  (x ≠ y ∧  ¬(x ≼  y) ∧  ¬ (y ≼  x)) ∧ ¬ (x # y)
+  x ≠ y ∧  ¬(x ≼  y) ∧  ¬ (y ≼  x) ∧ ¬ (x # y)
 
 notation:9 l:9 "co" r:10 => concurrent l r
 
@@ -128,14 +139,18 @@ This theorem states that if t and t' are concurrent, plus t and t' are enabled i
 state s, then there is no immediate conflict.
 -/
 theorem coinitial_conc {N : PetriNet α β} (s : Set N.places) (t t' : N.transition) 
-  (ho : occurrence_net N) (hen : {t, t'} ⊂  enable (s)) (hconc : concurrent (Sum.inr t) (Sum.inr t')) : 
+  (ho : occurrence_net N) (hen : {t, t'} ⊂  enable (s)) (hconc : (Sum.inr t) co (Sum.inr t')) : 
   Disjoint (•ₜ t ) (•ₜ t') := by
   by_cases h : Disjoint (•ₜ t) (•ₜ t')
   . apply h
-  . have h₁ : ¬ (conflict (Sum.inr t) (Sum.inr t')) := (hconc.right)
-    have h₂ : ¬ (t #₀ t') := by sorry
-    exact absurd h h₂
+  . have h₁ : ¬ (conflict (Sum.inr t) (Sum.inr t')) := by apply ((hconc.right).right).right
+    have h₂ :  (t #₀ t') := Iff.mp imp_false h
+    have h₃ : ¬ (t #₀ t') := by_contra 
+      fun hnp : ¬ ¬ (t #₀ t') => show False from 
+        sorry
+    exact absurd h₂ h₃
 
-#align coinitial_conc OccurrenceNet.coinitial_conc
+
+--#align coinitial_conc OccurrenceNet.coinitial_conc
 
 end OccurrenceNet
