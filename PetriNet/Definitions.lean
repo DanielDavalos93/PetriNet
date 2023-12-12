@@ -221,7 +221,7 @@ With the previous example:
 def there_is_seq {N : PetriNet α β} (s0 : Set N.places) (sn : Set N.places) : Prop :=
   ∃ (l : List N.transition), firing_concat s0 l = sn
 
-notation:8 ss:8"[*]"ls:9 => there_is_seq ss ls
+notation:10 ss:10"[*]"ls:11 => there_is_seq ss ls
 
 --Reachable
 /-
@@ -237,3 +237,15 @@ This definition returns all the states that can be executed in a Petri net.
 def reach_net (N : PetriNet α β) : Set (Set N.places) :=
   reach N (N.m₀)
 
+
+--Trace
+def trace_simple {N : PetriNet α β} (t₁ t₂ : N.transition) : Prop :=
+  ∃ s s' : reach_net N, firing_concat s [t₁, t₂] = s'
+
+notation:12 t1:12";"t2:13 => trace_simple t1 t2 
+
+--Transform the trace in a relation
+def trace_rel {N : PetriNet α β} : N.transition → N.transition → Prop :=
+  fun t₂ : N.transition ↦ (fun t₁ : N.transition ↦  trace_simple t₁ t₂)
+
+notation:14 t1:14 "≅ " t2:15 => trace_rel t1 t2
