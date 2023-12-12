@@ -67,14 +67,16 @@ lemma rel_tp_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition}
 
 --A relation (p,t) implies p ≼  t 
 lemma rel_pt_to_pred {N : PetriNet α β} {p : N.places} {t : N.transition} 
-  (h : N.rel_pt p t) : Sum.inl p ≼  Sum.inr t := by exact tranClos.base h
+  (h : N.rel_pt p t) : Sum.inl p ≼  Sum.inr t := by 
+    exact tranClos.base h
 
 
 #align rel_pt_to_pred Flow.rel_pt_to_pred
 
 --A relation (t,p) implies t≼  p
 lemma rel_tp_to_pred {N : PetriNet α β} {p : N.places} {t : N.transition} 
-  (h : N.rel_tp t p) : Sum.inr t ≼  Sum.inl p := by exact tranClos.base h
+  (h : N.rel_tp t p) : Sum.inr t ≼  Sum.inl p := by 
+    exact tranClos.base h
 
 #align rel_tp_to_flow Flow.rel_tp_to_flow
 
@@ -83,14 +85,14 @@ end Flow
 
 namespace OccurrenceNet
 
-def inmediate_conflict {N : PetriNet α β} (t₁ : N.transition) (t₂ : N.transition) :
+def immediate_conflict {N : PetriNet α β} (t₁ : N.transition) (t₂ : N.transition) :
   Prop :=
     ¬ (Disjoint (•ₜ t₁) (•ₜ t₂))
 
-notation:5 l:5 "#₀" r:6 => inmediate_conflict l r
+notation:5 l:5 "#₀" r:6 => immediate_conflict l r
 
 
-def conflict {N : PetriNet α β} (x : N.places ⊕ N.transition) (y : N.places ⊕ N.transition) : Prop :=
+def conflict {N : PetriNet α β} (x y : N.places ⊕ N.transition) : Prop :=
  ∃ t₁ t₂ : N.transition, ((Sum.inr t₁ ≼  x) ∧ (Sum.inr t₂ ≼  y) ∧ (t₁ #₀ t₂))
 
 notation:7 l:7 "#" r:8 => conflict l r
@@ -133,6 +135,7 @@ def concurrent_set {N : PetriNet α β} (X : Set (N.places ⊕ N.transition)) : 
 
 notation:11 "CO" var:11 => concurrent_set var
 
+
 /-!
 # Coinitial concurrent theorem 
 This theorem states that if t and t' are concurrent, plus t and t' are enabled in some 
@@ -145,12 +148,11 @@ theorem coinitial_conc {N : PetriNet α β} (s : Set N.places) (t t' : N.transit
   . apply h
   . have h₁ : ¬ (conflict (Sum.inr t) (Sum.inr t')) := by apply ((hconc.right).right).right
     have h₂ :  (t #₀ t') := Iff.mp imp_false h
-    have h₃ : ¬ (t #₀ t') := by_contra 
-      fun hnp : ¬ ¬ (t #₀ t') => show False from 
-        sorry
+    have h₃ : ¬(t #₀ t') := by 
+      unfold immediate_conflict ; sorry 
     exact absurd h₂ h₃
+  
+#align coinitial_conc OccurrenceNet.coinitial_conc
 
-
---#align coinitial_conc OccurrenceNet.coinitial_conc
 
 end OccurrenceNet
