@@ -49,9 +49,15 @@ notation:1 l:1 "≺ " r:2 => flow _ l r
    | step {x y z : α} : r x y →  tranClos r y z →  tranClos r x z
 
 @[reducible] def predecesor {α β : Type} {N : PetriNet α β} (x y : N.places ⊕  N.transition) : Prop :=
-     (tranClos (flow N)) x y
+     (tranClos (flow N)) x y ∨ x = y 
 
 notation:3 l:3 "≼ " r:4 => predecesor l r
+
+lemma reflexive_flow {N : PetriNet α β} (x : N.places ⊕ N.transition) : x ≼  x := by
+  exact Or.inr rfl
+
+#align reflexive_flow Flow.reflexive_flow
+
 
 --A relation (p,t) implies p ≺ t 
 lemma rel_pt_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition} 
@@ -68,7 +74,7 @@ lemma rel_tp_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition}
 --A relation (p,t) implies p ≼  t 
 lemma rel_pt_to_pred {N : PetriNet α β} {p : N.places} {t : N.transition} 
   (h : N.rel_pt p t) : Sum.inl p ≼  Sum.inr t := by 
-    exact tranClos.base h
+   exact Or.inl (tranClos.base h)
 
 
 #align rel_pt_to_pred Flow.rel_pt_to_pred
@@ -76,7 +82,7 @@ lemma rel_pt_to_pred {N : PetriNet α β} {p : N.places} {t : N.transition}
 --A relation (t,p) implies t≼  p
 lemma rel_tp_to_pred {N : PetriNet α β} {p : N.places} {t : N.transition} 
   (h : N.rel_tp t p) : Sum.inr t ≼  Sum.inl p := by 
-    exact tranClos.base h
+    exact Or.inl (tranClos.base h)
 
 #align rel_tp_to_flow Flow.rel_tp_to_flow
 
@@ -141,18 +147,21 @@ notation:11 "CO" var:11 => concurrent_set var
 This theorem states that if t and t' are concurrent, plus t and t' are enabled in some 
 state s, then there is no immediate conflict.
 -/
-theorem coinitial_conc {N : PetriNet α β} (s : Set N.places) (t t' : N.transition) 
-  (ho : occurrence_net N) (hen : {t, t'} ⊂  enable (s)) (hconc : (Sum.inr t) co (Sum.inr t')) : 
-  Disjoint (•ₜ t ) (•ₜ t') := by
+theorem coinitial_conc {N : PetriNet α β} (t t' : N.transition) (hconc : (Sum.inr t) co (Sum.inr t')) : Disjoint (•ₜ t ) (•ₜ t') := by
   by_cases h : Disjoint (•ₜ t) (•ₜ t')
   . apply h
-  . have h₁ : ¬ (conflict (Sum.inr t) (Sum.inr t')) := by apply ((hconc.right).right).right
-    have h₂ :  (t #₀ t') := Iff.mp imp_false h
-    have h₃ : ¬(t #₀ t') := by 
-      unfold immediate_conflict ; sorry 
-    exact absurd h₂ h₃
+  . unfold concurrent conflict immediate_conflict at hconc;
+    cases hconc with
+    | intro h1 h2 =>
+       cases h2 with
+        |intro h3 h4  =>
+          cases h4 with
+          | intro h5 h6 =>
+            have h7t : (Sum.inr t) ≼ (Sum.inr t) := by apply Flow.reflexive_flow
+            have h7t': (Sum.inr t')≼ (Sum.inr t'):= by apply Flow.reflexive_flow
+            simp only [not_exists, not_and] at h6
+            have h8 : ¬¬ Disjoint (•ₜ t) (•ₜ t') := by exact h6 t t' h7t h7t'
+            rw [not_not] at h8
+            aesop
   
-#align coinitial_conc OccurrenceNet.coinitial_conc
-
-
 end OccurrenceNet
