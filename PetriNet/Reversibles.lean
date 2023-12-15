@@ -15,8 +15,19 @@ structure revPetriNet (α : Type) (β : Type) extends (PetriNet α β) where
   rev_rel_pt (p : places) (t : transition) : Prop := rel_tp t p
   rev_rel_tp (t : transition) (p : places) : Prop := rel_pt p t
 
---def rev_
+def rev_preset_t {R : revPetriNet α β} (p : R.transition) : Set R.places :=
+ Relation.pre_image R.rev_rel_pt p 
 
---lemma rev_preset_p {R : revPetriNet α β} (hpres : ) 
+prefix:1 "•ᵣ" => rev_preset_t
+
+def rev_postset_t {R : revPetriNet α β} (p : R.transition) : Set R.places :=
+ Relation.image R.rev_rel_tp p 
+
+prefix:2 "•ᵣ" => rev_postset_t
+
+def rev_enable {R : PetriNet α β} (s : Set R.places) : Set R.transition :=
+ {t : R.transition | (•ᵣ t) ⊆ s ∧ (t •ᵣ)∩ s ⊆ (•ᵣ t)}
+
+--lemma rev_preset_p {R : revPetriNet α β} (t : R.transition) (s : Set R.places) : 
 
 theorem rev_commutative {R : revPetriNet α β} (s s' : Set R.places) (t : R.transition)  (hf : s[*]s') : s'[*]s := by sorry 
