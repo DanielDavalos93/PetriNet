@@ -1,8 +1,6 @@
 import PetriNet.Definitions
 import PetriNet.Occurrence
 
-variable (α β : Type)
-
 /-
 # Definitions and properties of reversible Petri Net, given a Petri Net
 
@@ -12,8 +10,16 @@ on `R : revPetriNet Nat Bool` we have `1 ≺ Tue`, `True ≺ 2`, `2 ≺ True` an
 `True≺ 1`.
 -/
 @[ext] structure revPetriNet (α : Type) (β : Type) extends (PetriNet α β) where
-  rev_rel_pt (p : places) (t : transition) : Prop := rel_tp t p
-  rev_rel_tp (t : transition) (p : places) : Prop := rel_pt p t
+  rev_rel_pt : places →  transition →  Prop
+  rev_rel_tp : transition →  places →  Prop
+
+variable {α β : Type} {R : revPetriNet α β}
+
+def rev_rel_pt (p : R.places) (t : R.transition) : Prop :=
+  R.rel_tp t p
+
+def rev_rel_tp (t : R.transition) (p : R.places) : Prop :=
+  R.rev_rel_pt p t
 
 /- 
 Proving the equality of two reversible Petri nets R₁ and R₂
@@ -35,19 +41,17 @@ lemma revPetriNet_eq_transition (R₁ R₂ : revPetriNet α β) (trans : R₁.tr
 --------
 
 @[simp] def rev_preset_t {R : revPetriNet α β} (t : R.transition) : Set R.places :=
-  Relation.image R.rel_tp t 
+  Relation.pre_image R.rev_rel_pt t 
 
 prefix:1 "•ᵣ" => rev_preset_t
 
 @[simp] def rev_postset_t {R : revPetriNet α β} (t : R.transition) : Set R.places :=
- Relation.pre_image R.rel_pt t
+ Relation.image R.rev_rel_tp t
 
 postfix:2 "•ᵣ" => rev_postset_t
 
-example {R : revPetriNet α β} (t : R.transition) : (•ᵣ t) = ∅  := sorry
-
---lemma pres_s_equal_rev_post_s' {R : revPetriNet α β} (s s' : Set R.places) (t : R.transition) 
---  (forward_preset : (•ₜ t) = s) (backward_poset : (t •ᵣ) = s') : s = s' := by sorry
+lemma pres_s_equal_rev_post_s' {R : revPetriNet α β} (s s' : Set R.places) (t : R.transition) 
+  : (•ₜ t) = (t •ᵣ) := by sorry
 
 /-
  ** Reversing Firing 
