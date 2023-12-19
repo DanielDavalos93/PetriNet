@@ -40,7 +40,7 @@ States aren't defined with a special name, but I'll allways refer it with `Set N
 -/
 
 -- Petri net
-structure PetriNet (α : Type) (β : Type) where
+@[ext] structure PetriNet (α : Type) (β : Type) where
   places : Finset α
   transition : Finset β
   rel_pt : places →  transition →  Prop

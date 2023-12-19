@@ -11,23 +11,56 @@ For example, if `P : PetriNet Nat Bool` with `1 ≺ True` and `True≺ 2`, then
 on `R : revPetriNet Nat Bool` we have `1 ≺ Tue`, `True ≺ 2`, `2 ≺ True` and 
 `True≺ 1`.
 -/
-structure revPetriNet (α : Type) (β : Type) extends (PetriNet α β) where
+@[ext] structure revPetriNet (α : Type) (β : Type) extends (PetriNet α β) where
   rev_rel_pt (p : places) (t : transition) : Prop := rel_tp t p
   rev_rel_tp (t : transition) (p : places) : Prop := rel_pt p t
 
-def rev_preset_t {R : revPetriNet α β} (p : R.transition) : Set R.places :=
- Relation.pre_image R.rev_rel_pt p 
+/- 
+Proving the equality of two reversible Petri nets R₁ and R₂
+-/
+lemma revPetriNet_eq_places (R₁ R₂ : revPetriNet α β) (places : R₁.places = R₂.places)
+  (a : α) : a ∈  R₁.places ↔  a ∈  R₂.places := by
+    exact Iff.of_eq (congrArg (Membership.mem a) places)
+
+lemma revPetriNet_eq_transition (R₁ R₂ : revPetriNet α β) (trans : R₁.transition = R₂.transition)
+  (b : β) : b ∈  R₁.transition ↔  b ∈  R₂.transition := by
+    exact Iff.of_eq (congrArg (Membership.mem b) trans)
+
+@[simp] lemma revPetriNet_equality (R₁ R₂ : revPetriNet α β) (places : R₁.places = R₂.places) 
+  (transition : R₁.transition = R₂.transition) (m₀ : HEq R₁.m₀ R₂.m₀)  
+  (rel_pt : HEq R₁.rel_pt R₂.rel_pt) (rel_tp : HEq R₁.rel_tp R₂.rel_tp)
+  (rev_rel_pt : HEq R₁.rev_rel_pt R₂.rev_rel_pt) (rev_rel_tp : HEq R₁.rev_rel_tp R₂.rev_rel_tp)
+  : R₁ = R₂ := by 
+    exact revPetriNet.ext R₁ R₂ places transition rel_pt rel_tp m₀ rev_rel_pt rev_rel_tp
+--------
+
+@[simp] def rev_preset_t {R : revPetriNet α β} (t : R.transition) : Set R.places :=
+  Relation.image R.rel_tp t 
 
 prefix:1 "•ᵣ" => rev_preset_t
 
-def rev_postset_t {R : revPetriNet α β} (p : R.transition) : Set R.places :=
- Relation.image R.rev_rel_tp p 
+@[simp] def rev_postset_t {R : revPetriNet α β} (t : R.transition) : Set R.places :=
+ Relation.pre_image R.rel_pt t
 
-prefix:2 "•ᵣ" => rev_postset_t
+postfix:2 "•ᵣ" => rev_postset_t
 
-def rev_enable {R : PetriNet α β} (s : Set R.places) : Set R.transition :=
- {t : R.transition | (•ᵣ t) ⊆ s ∧ (t •ᵣ)∩ s ⊆ (•ᵣ t)}
+example {R : revPetriNet α β} (t : R.transition) : (•ᵣ t) = ∅  := sorry
 
---lemma rev_preset_p {R : revPetriNet α β} (t : R.transition) (s : Set R.places) : 
+--lemma pres_s_equal_rev_post_s' {R : revPetriNet α β} (s s' : Set R.places) (t : R.transition) 
+--  (forward_preset : (•ₜ t) = s) (backward_poset : (t •ᵣ) = s') : s = s' := by sorry
+
+/-
+ ** Reversing Firing 
+If `rev_rel_pt p t = rel_tp t p` then •ᵣ t
+-/
+
+def rev_firing {R : revPetriNet α β} (s : Set R.places) (t : enable s) : Set R.places := sorry
+  
+
+--def rev_enable {R : revPetriNet α β} (s : Set R.places) : Set R.transition :=
+-- {t : R.transition | (•ᵣ t) ⊆ s ∧ (t •ᵣ)∩ s ⊆ (•ᵣ t)}
+
+--lemma reversible (N : PetriNet α β) (R : revPetriNet α β)
+
 
 theorem rev_commutative {R : revPetriNet α β} (s s' : Set R.places) (t : R.transition)  (hf : s[*]s') : s'[*]s := by sorry 
