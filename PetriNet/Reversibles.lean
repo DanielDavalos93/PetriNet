@@ -21,6 +21,9 @@ def rev_rel_pt (p : R.places) (t : R.transition) : Prop :=
 def rev_rel_tp (t : R.transition) (p : R.places) : Prop :=
   R.rev_rel_pt p t
 
+lemma set_eq_rev_rel_pt (t : R.transition) (p : R.places) : 
+    R.rev_rel_pt p t = R.rel_tp t p := by sorry 
+
 /-
 Proving the equality of two reversible Petri nets R₁ and R₂
 -/
@@ -79,8 +82,7 @@ lemma pres_t_equal_rev_post_t {R : revPetriNet α β} (t : R.transition) : (•�
   calc
     (•ₜt) = Relation.pre_image R.rel_pt t   := by rfl
        _  = {p : R.places | R.rel_pt p t}   := by rfl
-       _ = {p : R.places | R.rev_rel_tp t p}:= by
-          sorry
+       _ = {p : R.places | R.rev_rel_tp t p}:= by sorry
        _ = Relation.image R.rev_rel_tp t    := by rfl
 
 lemma post_t_equal_rev_pres_t {R : revPetriNet α β} (t : R.transition) : (t •ₜ) = (•ᵣ t) := by
@@ -92,8 +94,14 @@ lemma post_t_equal_rev_pres_t {R : revPetriNet α β} (t : R.transition) : (t �
  Second, we write `s⟨t] = s'` for reversible firing such that s↝ s' through the transition t,
  where `s'[t⟩ = s` is the fordward version and s'↠ s.
 -/
+
 def Reversing.enable {R : revPetriNet α β} (s : Set R.places) : Set R.transition :=
- {t : R.transition | (•ᵣ t) ⊆ s ∧ (t •ᵣ)∩ s ⊆ (•ᵣ t)}
+ {t : R.transition | (t •ₜ) ⊆ s ∧ (•ₜ t)∩ s ⊆ (t •ₜ)}
+
+
+/-def Reversing.enable {R : revPetriNet α β} (s : Set R.places) : Set R.transition :=
+  {t : R.transition | ∀ (s' : Set R.places), s'[t⟩s}
+-/
 
 def Reversing.firing {R : revPetriNet α β} (s : Set R.places) (t : Reversing.enable s)
   : Set R.places :=
@@ -101,9 +109,28 @@ def Reversing.firing {R : revPetriNet α β} (s : Set R.places) (t : Reversing.e
 
 notation:24 lhs:24 "[" rhs:25 "⟩ᵣ" => Reversing.firing lhs rhs
 
---lemma firing_fordwad_reversible {R : revPetriNet α β} (s s' : Set R.places) 
---  (t : enable s) (hf : firing s t = s') : (t ∈  Reversing.enable s') := by
---  sorry
+def Reversing.is_firing {R : revPetriNet α β} (s s' : Set R.places) (t : Reversing.enable s)
+  : Reversing.firing s t = s' := by sorry
+
+notation:26 lhs:26 "[" trans:27 "⟩ᵣ" rhs:28 => Reversing.is_firing lhs trans rhs
+
+/-lemma enable_fordward_reversible {R : revPetriNet α β} (s : Set R.places) 
+  : (t ∈  enable s) ↔  ∃ s' : Set R.places, (t ∈  Reversing.enable s') := by sorry-/
+
+lemma enable_fordward_reversible {R : revPetriNet α β} (s : Set R.places)
+  (t : R.transition) : (t ∈  enable s) ↔  ∃ s' : Set R.places, (t ∈  Reversing.enable s') := by
+    sorry
+
+--lemma enable_fordward_reversible {R : revPetriNet α β} (s : Set R.places)
+--  (t : R.transition) : (t ∈  enable s) ↔  ∃ s' : Set R.places, (t ∈  Reversing.enable s') 
+
+--lemma firing_fordward_reversible {R : revPetriNet α β} (s : Set R.places) (t : enable s) 
+--  (hf : s[t⟩s') : s'[t⟩s := by sorry
+
+
+lemma firing_fordward_reversible {R : revPetriNet α β} (s s' : Set R.places) 
+  (t : enable s) : firing s t = s' →  Reversing.firing s' t = s := by 
+    sorry
 
 
 theorem rev_commutative {R : revPetriNet α β} (s s' : Set R.places) (t : R.transition)
