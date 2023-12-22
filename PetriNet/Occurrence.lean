@@ -35,13 +35,13 @@ namespace Flow
 
 variable {α β : Type}
 
-@[reducible] def flow (N : PetriNet α β) :
+@[reducible] def Fordward.flow (N : PetriNet α β) :
     (N.places ⊕  N.transition) →  (N.places ⊕  N.transition) →  Prop
     | Sum.inl p, Sum.inr t  => N.rel_pt p t
     | Sum.inr t, Sum.inl p  => N.rel_tp t p
     | _, _                  => false
 
-notation:1 l:1 "≺ " r:2 => flow _ l r
+notation:1 l:1 "≺ " r:2 => Fordward.flow _ l r
 
 --Clausura transitiva
 @[reducible] inductive tranClos (r : α →  α →  Prop) : α →  α →  Prop
@@ -49,7 +49,7 @@ notation:1 l:1 "≺ " r:2 => flow _ l r
    | step {x y z : α} : r x y →  tranClos r y z →  tranClos r x z
 
 @[reducible] def predecesor {α β : Type} {N : PetriNet α β} (x y : N.places ⊕  N.transition) : Prop :=
-     (tranClos (flow N)) x y ∨ x = y 
+     (tranClos (Fordward.flow N)) x y ∨ x = y 
 
 notation:3 l:3 "≼ " r:4 => predecesor l r
 
@@ -61,14 +61,14 @@ lemma reflexive_flow {N : PetriNet α β} (x : N.places ⊕ N.transition) : x �
 
 --A relation (p,t) implies p ≺ t 
 lemma rel_pt_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition} 
-  (h : N.rel_pt p t) : flow N (Sum.inl p) (Sum.inr t) := by 
+  (h : N.rel_pt p t) : Fordward.flow N (Sum.inl p) (Sum.inr t) := by 
    exact h 
 
 #align rel_pt_to_flow Flow.rel_pt_to_flow
 
 --A relation (t,p) implies t≺ p
 lemma rel_tp_to_flow {N : PetriNet α β} {p : N.places} {t : N.transition} 
-  (h : N.rel_tp t p) : flow N (Sum.inr t) (Sum.inl p) := by 
+  (h : N.rel_tp t p) : Fordward.flow N (Sum.inr t) (Sum.inl p) := by 
    exact h
 
 --A relation (p,t) implies p ≼  t 
@@ -131,7 +131,7 @@ def occurrence_net (N : PetriNet α β) : Prop :=
 The idea of the concurrent definition is that there is no conflict in the entire flow 
 relationship path (i.e. a conflict between two transitions affects their predecessors).
 -/
-def concurrent {N : PetriNet α β} (x : N.places ⊕  N.transition) (y : N.places ⊕ N.transition) : Prop :=
+def concurrent {N : PetriNet α β} (x y : N.places ⊕  N.transition) : Prop :=
   x ≠ y ∧  ¬(x ≼  y) ∧  ¬ (y ≼  x) ∧ ¬ (x # y)
 
 notation:9 l:9 "co" r:10 => concurrent l r

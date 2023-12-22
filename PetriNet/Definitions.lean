@@ -3,16 +3,16 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Set.Basic
 
 /-!
-# Basic definitions of Petri Net 
+# Basic definitions of Petri Net
 
 PetriNet is a structure that is build from two types α β.
-The idea is similar to the classic definition, (P,T,•N,N•) and (N,m₀) is a place/transition 
-Petri net, where m₀ is the initial state. In our case,I've defined a Petri net as 
+The idea is similar to the classic definition, (P,T,•N,N•) and (N,m₀) is a place/transition
+Petri net, where m₀ is the initial state. In our case,I've defined a Petri net as
 N = (P,T,•N,N•,m₀), which is valid.
 We need to construct the definition of the relations rel_pt and rel_tp.
 
-There are two forms to define a state: as a set or as markings. In this code, we'll see 
-the sates as sets. This means that `p : N.places` is a place and `{p}` is a state. For 
+There are two forms to define a state: as a set or as markings. In this code, we'll see
+the sates as sets. This means that `p : N.places` is a place and `{p}` is a state. For
 this reason, all Petri net are only 1-safe (has at most a marking in each place).
 
 States aren't defined with a special name, but I'll allways refer it with `Set N.places`.
@@ -22,16 +22,16 @@ States aren't defined with a special name, but I'll allways refer it with `Set N
  Notation used here:
 
  For a Petri net `N : Petri α β`,
-  * Preset (preset_t) for a transition: `(•ₜt)` [abr: `\bu\_t t`] take a transition `t` 
-  and returns a set   of places `N.places`, whenever `∀ s ∈  (•ₜ t), N.rel_pt s t` is 
+  * Preset (preset_t) for a transition: `(•ₜt)` [abr: `\bu\_t t`] take a transition `t`
+  and returns a set   of places `N.places`, whenever `∀ s ∈  (•ₜ t), N.rel_pt s t` is
   true.
-  * Poset (poset_t) for a transition: `(t •ₜ)` the same idea but `∀ s∈ (t •ₜ), 
+  * Poset (poset_t) for a transition: `(t •ₜ)` the same idea but `∀ s∈ (t •ₜ),
   N.rel_tp t s` is true.
-  * Preset (preset_p) and poset (poset_p) for a place: `(•ₚ p)` and `(p •ₚ)` take a 
+  * Preset (preset_p) and poset (poset_p) for a place: `(•ₚ p)` and `(p •ₚ)` take a
   place and returns a set of transitions, whenever `N.rel_tp t p` and `N.rel_pt p t`
   are true, respectively.
-  * Execution (firing): s[t⟩ [abr: `s [ t \ran`] Given a state `s : Set N.places` and a 
-  transition `t`, returns the state `s'`. If `s[t⟩=s'` is true, we can denote as 
+  * Execution (firing): s[t⟩ [abr: `s [ t \ran`] Given a state `s : Set N.places` and a
+  transition `t`, returns the state `s'`. If `s[t⟩=s'` is true, we can denote as
   `s[t⟩s` how they are writen in books.
   * `s[*]sₙ : Prop` is an abreviature if there are sequences of states [s,s₁,...,sₙ] and
   transitions [t₁,t₂,...,tₙ] which sᵢ₋₁[tᵢ⟩sᵢ for each i = 1,...,n and s₀=s.
@@ -75,7 +75,7 @@ postfix:1 "•ₚ" => poset_p
 postfix:2 "•ₜ" => poset_t
 
 /-!
-Next definitions say if the state doesn't have any transition before (is_initial) or 
+Next definitions say if the state doesn't have any transition before (is_initial) or
 after (is_final)
 -/
 def is_initial {n : PetriNet α β} (s : Set n.places) : Prop :=
@@ -86,7 +86,7 @@ def is_final {n : PetriNet α β} (s : Set n.places) : Prop :=
 
 /-!
 # Enabled transitions
-Given a state `s`, `enable s` returns the set of transitions that could be execute. The 
+Given a state `s`, `enable s` returns the set of transitions that could be execute. The
 plan is that s -> t don't have problem.
 -/
 def enable {n : PetriNet α β} (s : Set n.places) : Set n.transition :=
@@ -115,7 +115,7 @@ notation:2 lhs:3 "[" rhs:4 "⟩" => firing lhs rhs
 def is_firing {N : PetriNet α β} (s : Set N.places) (t : enable s) (s' : Set N.places) : Prop :=
   firing s t = s'
 
-notation:5 ls:5 "[" ts:6 "⟩" ls':7 => is_firing ls ts ls' 
+notation:5 ls:5 "[" ts:6 "⟩" ls':7 => is_firing ls ts ls'
 
 -- Firing as a set
 def Firing {n : PetriNet α β} (s : Set n.places) (T : Set n.transition) : Set n.places :=
@@ -135,44 +135,44 @@ lemma firing_eq1 {n : PetriNet α β} (s : Set n.places) (t : enable s) :
     apply Iff.intro
     . intro h
       simp only [Set.mem_inter_iff, Set.mem_singleton_iff, and_assoc]
-      cases h 
+      cases h
       case inl h =>
-        left 
+        left
         cases h with
         | intro h1 h2 =>
           constructor ; exact h1 ; simp ; exact h2
       case inr h =>
         right
         simp ; exact h
-    . intro h 
-      simp only [Set.mem_inter_iff, Set.mem_singleton_iff, and_assoc] at h 
-      cases h 
+    . intro h
+      simp only [Set.mem_inter_iff, Set.mem_singleton_iff, and_assoc] at h
+      cases h
       case inl h =>
-        left 
-        cases h with 
+        left
+        cases h with
         | intro h1 h2 =>
           constructor ; exact h1 ; simp at h2 ; exact h2
       case inr h =>
-        right 
+        right
         simp at h ; exact h
-    
+
 
 lemma firing_eq2 {n : PetriNet α β} (s : Set n.places) (t : enable (s)) :
-  firing s t = Firing s {↑ t} := by 
+  firing s t = Firing s {↑ t} := by
     exact firing_eq1 s t
 
 
-lemma IsEmpty_to_empty {α : Type} (s : Set α) (h : IsEmpty s) : s = ∅  := 
+lemma IsEmpty_to_empty {α : Type} (s : Set α) (h : IsEmpty s) : s = ∅  :=
   Iff.mp Set.isEmpty_coe_sort h
 
 
-lemma no_enable_preset_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.transition) 
-  (h : t ∉ enable (s)) : {(•ₜ y) | y∈ {↑t}∩ enable (s)} = ∅ := 
+lemma no_enable_preset_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.transition)
+  (h : t ∉ enable (s)) : {(•ₜ y) | y∈ {↑t}∩ enable (s)} = ∅ :=
     have h1 : IsEmpty {(•ₜ y) | y∈ {↑t}∩ enable (s)} := by aesop
     calc {(•ₜ y) | y∈ {↑t}∩ enable (s)} = ∅  := by apply IsEmpty_to_empty _ h1
 
-lemma no_enable_poset_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.transition) 
-  (h : t ∉ enable (s)) : {(y •ₜ) | y∈ {↑t}∩ enable (s)} = ∅ := 
+lemma no_enable_poset_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.transition)
+  (h : t ∉ enable (s)) : {(y •ₜ) | y∈ {↑t}∩ enable (s)} = ∅ :=
     have h1 : IsEmpty {(y •ₜ) | y∈ {↑t}∩ enable (s)} := by aesop
     calc {(y •ₜ) | y∈ {↑t}∩ enable (s)} = ∅  := by apply IsEmpty_to_empty _ h1
 
@@ -181,11 +181,12 @@ lemma no_enable_poset_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.tran
 This theorem says that if a transition `t` isn't enabled in a state `s` then the execution
 on `firing s t` is the identity (i.e. there is no execution)
 -/
-theorem no_enable_to_id {N : PetriNet α β} (s : Set N.places) (t : N.transition) 
+theorem no_enable_to_id {N : PetriNet α β} (s : Set N.places) (t : N.transition)
   (h : t∉ enable (s)) : Firing s {↑t} = s :=
-    calc Firing s {↑t} = (s\(Set.sUnion {(•ₜ y) | y∈ {↑t} ∩ enable (s)})) ∪ 
+    calc Firing s {↑t} = (s\(Set.sUnion {(•ₜ y) | y∈ {↑t} ∩ enable (s)})) ∪
           (Set.sUnion {(y •ₜ) | y∈ {↑t} ∩ enable (s)})  := rfl
-      _ = (s \ ∅ ) ∪ (Set.sUnion {(y •ₜ) | y∈ {↑t} ∩ enable (s)}) := by rw [no_enable_preset_to_emp s t h] ; simp
+      _ = (s \ ∅ ) ∪ (Set.sUnion {(y •ₜ) | y∈ {↑t} ∩ enable (s)}) := by
+          rw [no_enable_preset_to_emp s t h] ; simp
       _ = (s \ ∅ ) ∪ ∅  := by rw [no_enable_poset_to_emp s t h] ; simp
       _ = (s \ ∅ )      := Set.union_empty (s\∅ )
       _ = s             := Set.diff_empty
@@ -196,13 +197,13 @@ def init {α : Type} (l : List α) : List α :=
   ((l.reverse).tail).reverse
 
 --List of executions
-/-`firing_seq s0 l` ask for a list of transitions `l` and an initial state `s0` (this 
+/-`firing_seq s0 l` ask for a list of transitions `l` and an initial state `s0` (this
 initial state is not necessarily the same as the initial state of a Petri net `m₀`) and
 returns a list of states, whenever they are enabled in their respective executions.
-Such as: l=[t1,t2], s0={p1,p2}, s1=s[t1⟩={p3,p2} y s2=s[t2⟩={p3,p4} then 
+Such as: l=[t1,t2], s0={p1,p2}, s1=s[t1⟩={p3,p2} y s2=s[t2⟩={p3,p4} then
 `firing_seq s0 l = [s1,s2]`
 -/
-@[simp] def firing_seq {N : PetriNet α β} (s0 : Set N.places)  (l : List N.transition) 
+@[simp] def firing_seq {N : PetriNet α β} (s0 : Set N.places)  (l : List N.transition)
   : List (Set N.places) :=
   List.scanl (fun s t => Firing s (Set.singleton t)) s0 l
 
@@ -212,7 +213,7 @@ state of that sequence, whenever they are enabled.
 With the previous example:
 `firing l s0 = s2`
 -/
-@[simp] def firing_concat {N : PetriNet α β} (s0 : Set N.places) (l : List N.transition) 
+@[simp] def firing_concat {N : PetriNet α β} (s0 : Set N.places) (l : List N.transition)
   : Set N.places :=
   let firing_list := firing_seq s0 l
   let n := List.length firing_list
@@ -225,7 +226,7 @@ notation:10 ss:10"[*]"ls:11 => there_is_seq ss ls
 
 --Reachable
 /-
-Given a state `s`, `reach s` return all the states that can be executed by sequences of 
+Given a state `s`, `reach s` return all the states that can be executed by sequences of
 firing enabled.
 -/
 def reach (N : PetriNet α β) (s : Set N.places) : Set (Set N.places) :=
@@ -242,7 +243,7 @@ def reach_net (N : PetriNet α β) : Set (Set N.places) :=
 def trace_simple {N : PetriNet α β} (t₁ t₂ : N.transition) : Prop :=
   ∃ s s' : reach_net N, firing_concat s [t₁, t₂] = s'
 
-notation:12 t1:12";"t2:13 => trace_simple t1 t2 
+notation:12 t1:12";"t2:13 => trace_simple t1 t2
 
 --Transform the trace in a relation
 def trace_rel {N : PetriNet α β} : N.transition → N.transition → Prop :=
