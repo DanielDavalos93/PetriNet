@@ -4,26 +4,59 @@ import PetriNet.Occurrence
 /-
 # Definitions and properties of reversible Petri Net, given a Petri Net
 
-I extend a Petri Net giving only the reversible relation.
+`revPetriNet` is a definitions which inherits all properties of `PetriNet`,
+but the inverse relations are added.
+
+* I extend a Petri Net giving only the reversible relation.
 For example, if `P : PetriNet Nat Bool` with `1 ≺ True` and `True≺ 2`, then
 on `R : revPetriNet Nat Bool` we have `1 ≺ Tue`, `True ≺ 2`, `2 ≺ True` and
-`True≺ 1`.
+`True≺ 1`. 
+* Definitions of preset and postet are analogous. Also for enabled transitions
+and firing. 
+
+For notations are the same as those used for fordward nets, but eqquiped with 
+a sub-index `ᵣ`.
+
+The main property is prove that s[t⟩s' iff s'[t⟩ᵣs. And for a sequence 
+seq = t₁;...;tₙ and sᵢ₋₁ [tᵢ⟩sᵢ then s₀[seq]sₙ iff sₙ[← seq]s₀, where 
+← seq = tₙ;...;t₁.
 -/
+
 @[ext] structure revPetriNet (α : Type) (β : Type) extends (PetriNet α β) where
   rev_rel_pt : places →  transition →  Prop
   rev_rel_tp : transition →  places →  Prop
 
 variable {α β : Type} {R : revPetriNet α β}
 
-def rev_rel_pt (p : R.places) (t : R.transition) : Prop :=
-  R.rel_tp t p
+/- ## Axioms ##
+  If F ⊂ (places × transition) ∪ (transition × places) is the fordward relation and 
+  R ⊆ (places × transition) ∪ (transition × places) is the reversible relation, we know
+  that :
+  1. (p,t) ∈ F ↔ (t,p) ∈ R 
+  2. (t,p) ∈ F ↔ (p,t) ∈ R 
+-/
+axiom eq_rev_rel_pt : ∀ (p : R.places) (t : R.transition),
+  R.rev_rel_pt p t = R.rel_tp t p
 
-def rev_rel_tp (t : R.transition) (p : R.places) : Prop :=
-  R.rev_rel_pt p t
+axiom eq_rev_rel_tp : ∀ (t : R.transition) (p : R.places),
+  R.rev_rel_tp t p = R.rel_pt p t
+--
 
-lemma set_eq_rev_rel_pt (t : R.transition) (p : R.places) : 
-    R.rev_rel_pt p t = R.rel_tp t p := by sorry 
+/- Those lemmas are used for the pres_t_equal_rev_post_t and post_t_equal_rev_pres_t 
+theorems.
+-/
+lemma set_eq_rev_rel_pt (t : R.transition) : 
+    {p : R.places | R.rev_rel_pt p t} = {p : R.places | R.rel_tp t p} := by 
+    ext x
+    simp only [Set.mem_setOf_eq]
+    rw [← eq_rev_rel_pt]
 
+lemma set_eq_rev_rel_tp (t : R.transition) : 
+    {p : R.places | R.rev_rel_tp t p} = {p : R.places | R.rel_pt p t} := by 
+    ext x
+    simp only [Set.mem_setOf_eq]
+    rw [← eq_rev_rel_tp]
+    
 /-
 Proving the equality of two reversible Petri nets R₁ and R₂
 -/
@@ -78,14 +111,15 @@ prefix:1 "•ᵣ" => Reversing.preset_t
 
 postfix:2 "•ᵣ" => Reversing.postset_t
 
-lemma pres_t_equal_rev_post_t {R : revPetriNet α β} (t : R.transition) : (•ₜ t) = (t •ᵣ) :=
+theorem pres_t_equal_rev_post_t {R : revPetriNet α β} (t : R.transition) : (•ₜ t) = (t •ᵣ) :=
   calc
     (•ₜt) = Relation.pre_image R.rel_pt t   := by rfl
        _  = {p : R.places | R.rel_pt p t}   := by rfl
-       _ = {p : R.places | R.rev_rel_tp t p}:= by sorry
+       _ = {p : R.places | R.rev_rel_tp t p}:= by exact Eq.symm (set_eq_rev_rel_tp t)
        _ = Relation.image R.rev_rel_tp t    := by rfl
+       _ = (t •ᵣ)                           := by rfl
 
-lemma post_t_equal_rev_pres_t {R : revPetriNet α β} (t : R.transition) : (t •ₜ) = (•ᵣ t) := by
+theorem post_t_equal_rev_pres_t {R : revPetriNet α β} (t : R.transition) : (t •ₜ) = (•ᵣ t) := by
   sorry
 
 /-
@@ -99,10 +133,6 @@ def Reversing.enable {R : revPetriNet α β} (s : Set R.places) : Set R.transiti
  {t : R.transition | (t •ₜ) ⊆ s ∧ (•ₜ t)∩ s ⊆ (t •ₜ)}
 
 
-/-def Reversing.enable {R : revPetriNet α β} (s : Set R.places) : Set R.transition :=
-  {t : R.transition | ∀ (s' : Set R.places), s'[t⟩s}
--/
-
 def Reversing.firing {R : revPetriNet α β} (s : Set R.places) (t : Reversing.enable s)
   : Set R.places :=
     (Set.diff s (•ᵣ t) ) ∪ (t •ᵣ)
@@ -110,7 +140,8 @@ def Reversing.firing {R : revPetriNet α β} (s : Set R.places) (t : Reversing.e
 notation:24 lhs:24 "[" rhs:25 "⟩ᵣ" => Reversing.firing lhs rhs
 
 def Reversing.is_firing {R : revPetriNet α β} (s s' : Set R.places) (t : Reversing.enable s)
-  : Reversing.firing s t = s' := by sorry
+  : Prop :=
+    Reversing.firing s t = s' 
 
 notation:26 lhs:26 "[" trans:27 "⟩ᵣ" rhs:28 => Reversing.is_firing lhs trans rhs
 
