@@ -32,8 +32,8 @@ variable {α β : Type} {R : revPetriNet α β}
   If F ⊂ (places × transition) ∪ (transition × places) is the fordward relation and 
   R ⊆ (places × transition) ∪ (transition × places) is the reversible relation, we know
   that :
-  1. (p,t) ∈ F ↔ (t,p) ∈ R 
-  2. (t,p) ∈ F ↔ (p,t) ∈ R 
+  * (p,t) ∈ F ↔ (t,p) ∈ R 
+  * (t,p) ∈ F ↔ (p,t) ∈ R 
 -/
 axiom eq_rev_rel_pt : ∀ (p : R.places) (t : R.transition),
   R.rev_rel_pt p t = R.rel_tp t p
@@ -71,16 +71,16 @@ lemma revPetriNet_eq_transition (R₁ R₂ : revPetriNet α β)
 
 @[simp] lemma revPetriNet_equality (R₁ R₂ : revPetriNet α β)
   (places : R₁.places = R₂.places) (transition : R₁.transition = R₂.transition)
-  (m₀ : HEq R₁.m₀ R₂.m₀) (rel_pt : HEq R₁.rel_pt R₂.rel_pt) (rel_tp : HEq R₁.rel_tp R₂.rel_tp)
-  (rev_rel_pt : HEq R₁.rev_rel_pt R₂.rev_rel_pt) (rev_rel_tp : HEq R₁.rev_rel_tp R₂.rev_rel_tp)
-  : R₁ = R₂ := by
+  (m₀ : HEq R₁.m₀ R₂.m₀) (rel_pt : HEq R₁.rel_pt R₂.rel_pt) 
+  (rel_tp : HEq R₁.rel_tp R₂.rel_tp) (rev_rel_pt : HEq R₁.rev_rel_pt R₂.rev_rel_pt) 
+  (rev_rel_tp : HEq R₁.rev_rel_tp R₂.rev_rel_tp) : R₁ = R₂ := by
     exact revPetriNet.ext R₁ R₂ places transition rel_pt rel_tp m₀ rev_rel_pt rev_rel_tp
 --------
 
 /-
 * Reversing Flow
 -/
-
+open Flow
 @[reducible] def Reversing.flow (R : revPetriNet α β) :
     (R.places ⊕  R.transition) →  (R.places ⊕  R.transition) →  Prop
     | Sum.inl p, Sum.inr t  => R.rev_rel_pt p t
@@ -89,13 +89,9 @@ lemma revPetriNet_eq_transition (R₁ R₂ : revPetriNet α β)
 
 notation:20 l:20 "≺ ᵣ" r:21 => Reversing.flow _ l r
 
-@[reducible] inductive tranClos (r : α →  α →  Prop) : α →  α →  Prop
-   | base {x y : α} : r x y →  tranClos r x y
-   | step {x y z : α} : r x y →  tranClos r y z →  tranClos r x z
-
 @[reducible] def Reversing.predecesor {α β : Type} {R : revPetriNet α β}
   (x y : R.places ⊕  R.transition) : Prop :=
-     (tranClos (Reversing.flow R)) x y ∨ x = y
+     (tranClos (Reversing.flow R)) x y ∨ (x = y)
 
 notation:22 l:22 "≼ ᵣ" r:23 => Reversing.predecesor _ l r
 
@@ -107,20 +103,26 @@ notation:22 l:22 "≼ ᵣ" r:23 => Reversing.predecesor _ l r
 prefix:1 "•ᵣ" => Reversing.preset_t
 
 @[simp] def Reversing.postset_t {R : revPetriNet α β} (t : R.transition) : Set R.places :=
- Relation.image R.rev_rel_tp t
+  Relation.image R.rev_rel_tp t
 
 postfix:2 "•ᵣ" => Reversing.postset_t
 
-theorem pres_t_equal_rev_post_t {R : revPetriNet α β} (t : R.transition) : (•ₜ t) = (t •ᵣ) :=
+theorem rev_pos_t_equal_pres_t {R : revPetriNet α β} (t : R.transition) : (t •ᵣ) = (•ₜ t) :=
   calc
-    (•ₜt) = Relation.pre_image R.rel_pt t   := by rfl
-       _  = {p : R.places | R.rel_pt p t}   := by rfl
-       _ = {p : R.places | R.rev_rel_tp t p}:= by exact Eq.symm (set_eq_rev_rel_tp t)
-       _ = Relation.image R.rev_rel_tp t    := by rfl
-       _ = (t •ᵣ)                           := by rfl
+    (t•ᵣ) = Relation.image R.rev_rel_tp t    := by rfl
+       _  = {p : R.places | R.rev_rel_tp t p}:= rfl
+       _  = {p : R.places | R.rel_pt p t}    := by exact set_eq_rev_rel_tp t
+       _  = Relation.pre_image R.rel_pt t    := by rfl
+       _  = (•ₜt)                            := rfl
 
-theorem post_t_equal_rev_pres_t {R : revPetriNet α β} (t : R.transition) : (t •ₜ) = (•ᵣ t) := by
-  sorry
+theorem rev_pres_t_equal_pos_t {R : revPetriNet α β} (t : R.transition) : (•ᵣ t) = (t •ₜ) :=
+  calc 
+    (•ᵣ t)  = Relation.pre_image R.rev_rel_pt t := by rfl
+          _ = {p | R.rev_rel_pt p t}            := rfl
+          _ = {p | R.rel_tp t p}                := by exact set_eq_rev_rel_pt t 
+          _ = Relation.image R.rel_tp t         := rfl
+          _ = (t •ₜ)                            := rfl
+    
 
 /-
  ** Reversing Firing
@@ -130,7 +132,7 @@ theorem post_t_equal_rev_pres_t {R : revPetriNet α β} (t : R.transition) : (t 
 -/
 
 def Reversing.enable {R : revPetriNet α β} (s : Set R.places) : Set R.transition :=
- {t : R.transition | (t •ₜ) ⊆ s ∧ (•ₜ t)∩ s ⊆ (t •ₜ)}
+ {t : R.transition | (•ᵣt) ⊆ s ∧ (t•ᵣ)∩ s ⊆ (•ᵣt)}
 
 
 def Reversing.firing {R : revPetriNet α β} (s : Set R.places) (t : Reversing.enable s)
@@ -145,23 +147,32 @@ def Reversing.is_firing {R : revPetriNet α β} (s s' : Set R.places) (t : Rever
 
 notation:26 lhs:26 "[" trans:27 "⟩ᵣ" rhs:28 => Reversing.is_firing lhs trans rhs
 
-/-lemma enable_fordward_reversible {R : revPetriNet α β} (s : Set R.places) 
-  : (t ∈  enable s) ↔  ∃ s' : Set R.places, (t ∈  Reversing.enable s') := by sorry-/
+def Reversing.Firing {R : revPetriNet α β} (s : Set R.places) (T : Set R.transition)
+  : Set R.places :=
+    (Set.diff s (Set.sUnion {(•ᵣt) | t∈ T∩ Reversing.enable s})) ∪ 
+    Set.sUnion {(t•ᵣ) | t∈ T ∩ Reversing.enable s }
+
+/-lemma eq_enable_fordward_reversible {R : revPetriNet α β} (s s' : Set R.places) :
+  (t ∈  enable s) ↔ (t ∈  Reversing.enable s') := 
+    calc 
+      Reversing.enable s' = {t | (•ᵣt) ⊆ s' ∧ (t•ᵣ)∩ s' ⊆ (•ᵣt)}   := by rfl
+                          = {t | (t•ₜ)⊆ s'∧ (•ₜt)∩ s' ⊆ (t•ₜ)}     := sorry
+-/
+lemma Reversing.firing_eq1 {R : revPetriNet α β} (s : Set R.places) (t : Reversing.enable s)
+  : Reversing.firing s t = Reversing.Firing s {t.val} := by
+   sorry 
+
 
 lemma enable_fordward_reversible {R : revPetriNet α β} (s : Set R.places)
-  (t : R.transition) : (t ∈  enable s) ↔  ∃ s' : Set R.places, (t ∈  Reversing.enable s') := by
-    sorry
-
---lemma enable_fordward_reversible {R : revPetriNet α β} (s : Set R.places)
---  (t : R.transition) : (t ∈  enable s) ↔  ∃ s' : Set R.places, (t ∈  Reversing.enable s') 
+  (t : enable s) (s' : firing s t) : (t : Reversing.enable s') := sorry 
 
 --lemma firing_fordward_reversible {R : revPetriNet α β} (s : Set R.places) (t : enable s) 
---  (hf : s[t⟩s') : s'[t⟩s := by sorry
+--  (hf : firing s t = s') : (Reversing.firing s' t = s) := by sorry
 
 
-lemma firing_fordward_reversible {R : revPetriNet α β} (s s' : Set R.places) 
-  (t : enable s) : firing s t = s' →  Reversing.firing s' t = s := by 
-    sorry
+--lemma firing_fordward_reversible {R : revPetriNet α β} (s s' : Set R.places) 
+--  (t : enable s) : firing s t = s' →  Reversing.firing s' t = s := by 
+--    sorry
 
 
 theorem rev_commutative {R : revPetriNet α β} (s s' : Set R.places) (t : R.transition)
