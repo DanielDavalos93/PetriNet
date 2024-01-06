@@ -108,7 +108,7 @@ def deadlock {n : PetriNet α β} (s : Set n.places) : Prop :=
 
 -- Firing
 def firing {n : PetriNet α β} (s : Set n.places) (t : enable (s)) : Set n.places :=
-  (Set.diff s (•ₜ t) ) ∪ (t •ₜ)
+  (s \ (•ₜ t) ) ∪ (t •ₜ)
 
 notation:2 lhs:3 "[" rhs:4 "⟩" => firing lhs rhs
 
@@ -119,7 +119,7 @@ notation:5 ls:5 "[" ts:6 "⟩" ls':7 => is_firing ls ts ls'
 
 -- Firing as a set
 def Firing {n : PetriNet α β} (s : Set n.places) (T : Set n.transition) : Set n.places :=
-  (Set.diff s (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})) ∪
+  (s \ (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})) ∪
   (Set.sUnion {(t •ₜ) | t∈ T ∩ enable (s)})
 
 /-!
