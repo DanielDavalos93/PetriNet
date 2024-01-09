@@ -1,7 +1,7 @@
 import Mathlib.Data.Multiset.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Set.Basic
-
+import Mathlib.Data.List.Basic
 /-!
 # Basic definitions of Petri Net
 
@@ -214,12 +214,10 @@ With the previous example:
 `firing l s0 = s2`
 -/
 @[simp] def firing_concat {N : PetriNet α β} (s0 : Set N.places) (l : List N.transition)
-  : Set N.places :=
-  let firing_list := firing_seq s0 l
-  let n := List.length firing_list
-  List.get! firing_list (n-1)
+  : Set N.places := 
+  List.get! (firing_seq s0 l) ((List.length (firing_seq s0 l))-1)
 
-def there_is_seq {N : PetriNet α β} (s0 : Set N.places) (sn : Set N.places) : Prop :=
+@[simp] def there_is_seq {N : PetriNet α β} (s0 : Set N.places) (sn : Set N.places) : Prop :=
   ∃ (l : List N.transition), firing_concat s0 l = sn
 
 notation:10 ss:10"[*]"ls:11 => there_is_seq ss ls
