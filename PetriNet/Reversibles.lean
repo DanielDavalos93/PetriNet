@@ -1,6 +1,5 @@
 import PetriNet.Definitions
 import PetriNet.Occurrence
---set_option pp.explicit true
 
 /-
 # Definitions and properties of reversible Petri Net, given a Petri Net
@@ -122,6 +121,7 @@ theorem rev_pos_t_equal_pres_t {R : revPetriNet α β} (t : R.transition) : (t �
        _  = Relation.pre_image R.rel_pt t    := by rfl
        _  = (•ₜt)                            := rfl
 
+@[simp]
 theorem rev_pres_t_equal_pos_t {R : revPetriNet α β} (t : R.transition) : (•ᵣ t) = (t •ₜ) :=
   calc
     (•ᵣ t)  = Relation.pre_image R.rev_rel_pt t := by rfl
@@ -134,8 +134,8 @@ theorem rev_pres_t_equal_pos_t {R : revPetriNet α β} (t : R.transition) : (•
 /-
  ** Reversing Firing **
  First, the enable version of reversible Petri nets are analogous to the forward Petri nets.
- Second, we write `s[t⟩ᵣ = s'` for reversible firing such that s↝ s' through the transition t,
- where `s'[t⟩ = s` is the fordward version and s'↠ s.
+ Second, we write `s[t⟩ᵣ = s'` for reversible firing such that s↝ s' through the transition 
+ t, where `s'[t⟩ = s` is the fordward version and s'↠ s.
 -/
 
 def Reversing.enable {R : revPetriNet α β} (s : Set R.places) : Set R.transition :=
@@ -161,6 +161,8 @@ def Reversing.Firing {R : revPetriNet α β} (s : Set R.places) (T : Set R.trans
 
 notation:29 lhs:29 "[" rhs:30 "⟩ᵣ" => Reversing.Firing lhs rhs
 
+      
+
 def Reversing.is_Firing {R : revPetriNet α β} (s s' : Set R.places)
   (T : Set R.transition) : Prop :=
   Reversing.Firing s T = s'
@@ -168,8 +170,7 @@ def Reversing.is_Firing {R : revPetriNet α β} (s s' : Set R.places)
 notation:31 lhs:31 "[" trans:32 "⟩ᵣ" rhs:33 => Reversing.is_Firing lhs trans rhs
 
 
-lemma enable_fordward_reversible1 (s s' : Set R.places) (t : enable s) --(s' : firing s t)
-  (h : s' = firing s t)
+lemma enable_fordward_reversible (s s' : Set R.places) (t : enable s) (h : s' = firing s t)
   : t.val ∈ Reversing.enable s' := by
     unfold firing at h
     unfold Reversing.enable
@@ -188,13 +189,52 @@ lemma enable_fordward_reversible1 (s s' : Set R.places) (t : enable s) --(s' : f
       cases h1 
       . rename_i h3
         have h4 : ¬y∈ (•ₜ↑t.val) := by apply And.right h3
-        have h5 : y ∈ (•ₜ ↑t.val) := by rw [rev_pos_t_equal_pres_t] at h' ; apply And.left h'
+        have h5 : y ∈ (•ₜ ↑t.val) := by 
+          rw [rev_pos_t_equal_pres_t] at h' 
+          apply And.left h'
         contradiction 
       . rename_i h3
         exact h3
-      
 
-lemma Reversing.firing_eq1 {R : revPetriNet α β} (s : Set R.places) (t : Reversing.enable s)
+lemma enable_fordward_reversible_iff (s s' : Set R.places) (t : enable s) (h : s' = firing s t)
+  : t.val ∈  enable s ↔  t.val ∈  Reversing.enable s' := by 
+    unfold firing at h 
+    unfold Reversing.enable
+    simp only [Set.mem_setOf_eq, Set.mem_diff]
+    apply Iff.intro
+    . intros h'
+      unfold enable at t
+      rw [← rev_pos_t_equal_pres_t,← rev_pres_t_equal_pos_t] at *
+      apply Iff.mp 
+      . exact forall_eq
+      . intros
+        rename_i h1 h2
+        have h3 : (•ᵣ↑t.val)⊆ s' := 
+          calc 
+            (•ᵣ↑t.val) ⊆  (s \ (↑t•ᵣ)) ∪ (•ᵣ↑t) := by 
+              exact Set.subset_union_right (s\(↑t•ᵣ)) (•ᵣ↑t.val)
+            (s \ (↑t•ᵣ)) ∪ (•ᵣ↑t) = s' := by exact id (Eq.symm h)
+        apply And.intro 
+        . exact h3
+        . cases h2 
+          unfold enable at h'
+          rw [Set.subset_def]
+          intros h4 h5
+          have h6 : h4 ∈ (↑t.val•ᵣ) := by apply Set.mem_of_mem_inter_left h5
+          subst h
+          rw [Set.mem_inter_iff, Set.mem_union, Set.mem_diff] at h5
+          have h7 : (h4 ∈ s ∧ ¬h4 ∈ (↑t.val•ᵣ) ∨ h4 ∈ (•ᵣ↑t.val)) := by apply h5.2
+          cases h7
+          . rename_i h8
+            have h9 : ¬ h4 ∈ (↑t.val•ᵣ) := by apply h8.2
+            contradiction --h6 ∧  h9 -> False
+          . rename_i h8
+            exact h8
+    . exact fun _ ↦ Subtype.mem t
+
+
+
+lemma Reversing.firing_eq1 (s : Set R.places) (t : Reversing.enable s)
   : Reversing.firing s t = Reversing.Firing s {t.val} := by
    unfold Reversing.firing Reversing.Firing
    apply Set.ext
@@ -205,7 +245,7 @@ lemma Reversing.firing_eq1 {R : revPetriNet α β} (s : Set R.places) (t : Rever
     cases h
     case inl h =>
       left
-      have h1 : x∈s := by apply Set.mem_of_mem_diff h
+      have h1 : x∈ s := by apply Set.mem_of_mem_diff h
       simp only [Set.mem_inter_iff, Set.mem_singleton_iff, preset_t, Subtype.exists] at h
       apply And.intro
       . exact h1
@@ -213,7 +253,6 @@ lemma Reversing.firing_eq1 {R : revPetriNet α β} (s : Set R.places) (t : Rever
         simp 
         intros h2 h3 h4 h5 _ h7
         subst h7
-        have h8 :¬x ∈ Relation.pre_image R.rev_rel_pt ↑t := And.right h
         aesop
     case inr h =>
       right
@@ -223,28 +262,99 @@ lemma Reversing.firing_eq1 {R : revPetriNet α β} (s : Set R.places) (t : Rever
     cases h
     case inl h =>
       left
-      have h1 : x∈s := by apply Set.mem_of_mem_diff h
+      have h1 : x∈ s := by apply Set.mem_of_mem_diff h
       aesop
     case inr h =>
       right
       aesop
 
-lemma Reversing.Firing_eq2 {R : revPetriNet α β} (s : Set R.places) (t : Reversing.enable s)
+lemma Reversing.firing_eq2 {R : revPetriNet α β} (s : Set R.places) (t : Reversing.enable s)
   : Reversing.firing s t = Reversing.Firing s {↑t} := by
-    exact Reversing.firing_eq1 s t
+    exact Reversing.firing_eq1 s t 
 
 
+lemma reversing_fordward_firing (s s' : Set R.places) (t : enable s) (h : s' = Firing s {t.val})
+  : Firing s {t.val} = Reversing.Firing s' {t.val} := by
+    unfold Firing Reversing.Firing enable Reversing.enable 
+    --simp only [Set.mem_inter_iff, Set.mem_singleton_iff]
+    have h1 : Firing s {t.val} = firing s t := by exact Eq.symm (firing_eq1 s t)
+    have h2 : s' = firing s t := by apply Eq.trans h h1
+    have h3 : t.val ∈ Reversing.enable s' := by 
+      apply Iff.mp (enable_fordward_reversible_iff s s' t h2)
+      exact Subtype.mem t
+    ext x
+    simp [rev_pos_t_equal_pres_t, rev_pres_t_equal_pos_t]
+    apply Iff.intro 
+    . intros himp
+      cases himp
+      . rename_i h4
+        sorry
+      . sorry
+    . sorry
+
+/-
+** List of executions **
+-/
+@[simp] def Reversing.firing_seq (s0 : Set R.places)  (l : List R.transition)
+  : List (Set R.places) :=
+  List.scanl (fun s t => Reversing.Firing s (Set.singleton t)) s0 l
+
+@[simp]
+theorem reversing_fordward_firing_seq (s0 sn : Set R.places) (list list_rev : List R.transition) 
+  (h_list : list_rev = list.reverse) (h_last : sn = firing_concat s0 list) 
+  : firing_seq s0 list = Reversing.firing_seq sn list_rev := by 
+    rw [h_list, h_last]
+    ext x
+    rename_i h1
+    dsimp
+    rw [firing_concat, firing_seq] at h_last
+    simp only [Reversing.Firing, Firing, Reversing.enable, enable,
+      rev_pres_t_equal_pos_t, rev_pos_t_equal_pres_t]
+    constructor
+    . intro h2
+      unfold List.scanl
+      sorry
+    . sorry
 
 
---lemma firing_fordward_reversible {R : revPetriNet α β} (s s' : Set R.places) (t : enable s)
---  (hf : firing s t = s') (ht : t.val ∈ Reversing.enable s')
---  : (Reversing.firing s' ↑t ) := by sorry
+def Reversing.firing_concat  (s0 : Set R.places) (l : List R.transition)
+  : Set R.places :=
+  List.get! (Reversing.firing_seq s0 l) (List.length (Reversing.firing_seq s0 l)-1) 
+ 
+@[simp] def Reversing.there_is_seq {R : revPetriNet α β} (s0 sn : Set R.places) : Prop :=
+  ∃ (l : List R.transition), Reversing.firing_concat s0 l = sn
+
+notation:10 ss:10"[*]ᵣ"ls:11 => Reversing.there_is_seq ss ls
+
+--Reachable
+/-
+Given a state `s`, `reach s` return all the states that can be executed by sequences of
+firing enabled.
+-/
+def Reversing.reach (R : revPetriNet α β) (s : Set R.places) : Set (Set R.places) :=
+  {s' | s[*]s'}
+
+/- A special case, where the state initial is `m₀`.
+This definition returns all the states that can be executed in a Petri net.
+-/
+def Reversing.reach_net (R : revPetriNet α β) : Set (Set R.places) :=
+  reach R (R.m₀)
 
 
---lemma firing_fordward_reversible {R : revPetriNet α β} (s s' : Set R.places)
---  (t : enable s) : firing s t = s' →  Reversing.firing s' t = s := by
---    sorry
-
-
-theorem rev_commutative {R : revPetriNet α β} (s s' : Set R.places) (t : R.transition)
-  (hf : s[*]s') : s'[*]s := by sorry
+theorem rev_commutative {R : revPetriNet α β} (s s' : Set R.places) (h_reach : s' ∈  Reversing.reach R s) 
+    : (s [*] s') ↔  (s'[*]ᵣ s) := by 
+    simp only [there_is_seq]
+    simp only [Reversing.there_is_seq, Reversing.firing_concat, Reversing.firing_seq]
+    unfold firing_concat Reversing.Firing
+    unfold Reversing.reach at h_reach
+    constructor 
+    . intros h1
+      constructor 
+      . simp only [List.scanl_nil] at h1
+        sorry
+      . sorry
+    . intros h2 
+      constructor
+      . simp only [firing_seq, ge_iff_le, List.get!_eq_getD]
+        sorry
+      . sorry
