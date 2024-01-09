@@ -299,24 +299,6 @@ lemma reversing_fordward_firing (s s' : Set R.places) (t : enable s) (h : s' = F
   : List (Set R.places) :=
   List.scanl (fun s t => Reversing.Firing s (Set.singleton t)) s0 l
 
-@[simp]
-theorem reversing_fordward_firing_seq (s0 sn : Set R.places) (list list_rev : List R.transition) 
-  (h_list : list_rev = list.reverse) (h_last : sn = firing_concat s0 list) 
-  : firing_seq s0 list = Reversing.firing_seq sn list_rev := by 
-    rw [h_list, h_last]
-    ext x
-    rename_i h1
-    dsimp
-    rw [firing_concat, firing_seq] at h_last
-    simp only [Reversing.Firing, Firing, Reversing.enable, enable,
-      rev_pres_t_equal_pos_t, rev_pos_t_equal_pres_t]
-    constructor
-    . intro h2
-      unfold List.scanl
-      sorry
-    . sorry
-
-
 def Reversing.firing_concat  (s0 : Set R.places) (l : List R.transition)
   : Set R.places :=
   List.get! (Reversing.firing_seq s0 l) (List.length (Reversing.firing_seq s0 l)-1) 
