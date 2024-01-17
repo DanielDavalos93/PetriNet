@@ -92,6 +92,9 @@ plan is that s -> t don't have problem.
 def enable {n : PetriNet α β} (s : Set n.places) : Set n.transition :=
  {t : n.transition | (•ₜ t) ⊆ s ∧ (t •ₜ)∩ s ⊆ (•ₜ t)}
 
+def is_enabled {N : PetriNet α β} (m : Set N.places) (t : N.transition) : Prop :=
+    t ∈  enable m
+
 lemma preset_implies_enable (N : PetriNet α β) (s : Set N.places) (t : N.transition) :
   t ∈ enable s → (•ₜ t) ⊆ s := by
   intros h_enable
@@ -203,9 +206,19 @@ returns a list of states, whenever they are enabled in their respective executio
 Such as: l=[t1,t2], s0={p1,p2}, s1=s[t1⟩={p3,p2} y s2=s[t2⟩={p3,p4} then
 `firing_seq s0 l = [s1,s2]`
 -/
-@[simp] def firing_seq {N : PetriNet α β} (s0 : Set N.places)  (l : List N.transition)
+/-@[simp] def firing_seq {N : PetriNet α β} (s0 : Set N.places)  (l : List N.transition)
   : List (Set N.places) :=
   List.scanl (fun s t => Firing s (Set.singleton t)) s0 l
+-/
+
+inductive firing_sequence [DecidableEq α] {N : PetriNet α β} : (s : Set N.places) →
+  List N.transition →  (sn : Set N.places) → Prop
+  | empty : firing_sequence s [] s
+  | step : ∀ t s' s'' fs, (is_firing s t s')
+    → firing_sequence s' fs s''
+    → firing_sequence s (t :: fs) s''
+
+notation:200 ls:201 "[[" ts:202 "⟩⟩" lss:203 => firing_sequence ls ts lss
 
 --Concatenation of executions
 /-`firing_concat l s0` asks for a list `l` and an initial state `s0` and returns the last
@@ -213,38 +226,28 @@ state of that sequence, whenever they are enabled.
 With the previous example:
 `firing l s0 = s2`
 -/
-@[simp] def firing_concat {N : PetriNet α β} (s0 : Set N.places) (l : List N.transition)
-  : Set N.places := 
+/-@[simp] def firing_concat {N : PetriNet α β} (s0 : Set N.places) (l : List N.transition)
+  : Set N.places :=
   List.get! (firing_seq s0 l) ((List.length (firing_seq s0 l))-1)
+-/
 
-@[simp] def there_is_seq {N : PetriNet α β} (s0 : Set N.places) (sn : Set N.places) : Prop :=
-  ∃ (l : List N.transition), firing_concat s0 l = sn
+@[simp]
+def there_is_seq [DecidableEq α] {N : PetriNet α β} (s0 : Set N.places) (sn : Set N.places)
+  : Prop :=
+  ∃ l : List N.transition, firing_sequence s0 l sn
 
-notation:10 ss:10"[*]"ls:11 => there_is_seq ss ls
+notation:210 ss:211"[*]"ls:212 => there_is_seq ss ls
 
 --Reachable
 /-
 Given a state `s`, `reach s` return all the states that can be executed by sequences of
 firing enabled.
 -/
-def reach (N : PetriNet α β) (s : Set N.places) : Set (Set N.places) :=
+def reach [DecidableEq α] (N : PetriNet α β) (s : Set N.places) : Set (Set N.places) :=
   {s' | s[*]s'}
 
 /- A special case, when the state initial is `m₀`.
 This definition returns all the states that can be executed in a Petri net.
 -/
-def reach_net (N : PetriNet α β) : Set (Set N.places) :=
+def reach_net [DecidableEq α] (N : PetriNet α β) : Set (Set N.places) :=
   reach N (N.m₀)
-
-
---Trace
-def trace_simple {N : PetriNet α β} (t₁ t₂ : N.transition) : Prop :=
-  ∃ s s' : reach_net N, firing_concat s [t₁, t₂] = s'
-
-notation:12 t1:12";"t2:13 => trace_simple t1 t2
-
---Transform the trace in a relation
-def trace_rel {N : PetriNet α β} : N.transition → N.transition → Prop :=
-  fun t₂ : N.transition ↦ (fun t₁ : N.transition ↦  trace_simple t₁ t₂)
-
-notation:14 t1:14 "≅ " t2:15 => trace_rel t1 t2
