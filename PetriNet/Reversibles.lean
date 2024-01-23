@@ -235,6 +235,9 @@ lemma enable_fordward_reversible1 (s s' : Set R.places) (t : enable s)
           . rename_i h8
             exact h8
 
+/-
+The next lemma means that if s[t⟩s' then s'[t⟩ᵣs.
+-/
 lemma reversing_fordward_firing (s s' : Set R.places) (en : enable s)
    (h : s' = firing s en)
    : ∃ (h' : en.val ∈  Reversing.enable s' ), Reversing.is_firing s' h' s := by
@@ -263,61 +266,8 @@ lemma reversing_fordward_firing (s s' : Set R.places) (en : enable s)
           
           sorry
     . sorry
-/-
-The next lemma means that if s[t⟩s' then s'[t⟩ᵣs.
--/
-/-lemma reversing_fordward_firing (s s' : Set R.places) (en : enable s)
-   (h : firing s en = s')
-   : ∃ h' : Reversing.is_enabled s' en, Reversing.is_firing s' h' s := by
-    unfold firing Reversing.is_firing Reversing.firing at *
-    simp only [exists_prop]
-    constructor
-    . unfold Reversing.is_enabled
-      exact enable_fordward_reversible_iff s s' en (id (Eq.symm h))
-    . unfold enable at en
-      have ht : (•ₜen.val) ⊆ s ∧ (en.val•ₜ) ∩ s ⊆ (•ₜen.val) := by
-        simp only [Set.coe_setOf] at en
-        cases en
-        rename_i tr prop
-        constructor
-        . intros x h
-          simp at h
-          have h1 : (•ₜtr) ⊆ s := by apply prop.1
-          exact h1 h
-        . intros x h
-          have h2 : (tr•ₜ) ∩ s ⊆ (•ₜtr) := by apply prop.2
-          exact h2 h
-      have ht1 : (•ₜen.val) ⊆ s := by apply ht.1
-      have ht2 : (en.val•ₜ) ∩ s ⊆ (•ₜen) := by apply ht.2
-      subst h
-      repeat rw [Set.diff_eq, Set.ext_iff]
-      intro s'
-      apply Iff.intro
-      . intro hmp
-        rw [@Set.mem_union] at hmp
-        cases hmp
-        . rename_i mp
-          rw [@Set.mem_inter_iff, Set.mem_union, Set.mem_diff] at mp
-          cases mp
-          rename_i left right
-          cases left
-          . rename_i h
-            exact h.1
-          . rename_i h
-            rw [@rev_pres_t_equal_pos_t] at right
-            exact False.elim (right h)
-        . rename_i h
-          rw [rev_pos_t_equal_pres_t] at h
-          exact ht1 h
-      . intro hmpr
-        simp
-        left 
-        constructor 
-        . sorry
-        . sorry
-       -- constructor 
--/
-    --subst h
+
+
 /-   simp_all
     constructor
     .-- unfold Reversing.is_enabled Reversing.enable
