@@ -213,7 +213,7 @@ Such as: l=[t1,t2], s0={p1,p2}, s1=s[t1⟩={p3,p2} y s2=s[t2⟩={p3,p4} then
 
 inductive firing_sequence [DecidableEq α] {N : PetriNet α β} : (s : Set N.places) →
   List N.transition →  (sn : Set N.places) → Prop
-  | empty : firing_sequence s [] s
+  | empty : ∀ s, firing_sequence s [] s
   | step : ∀ t s' s'' fs, (is_firing s t s')
     → firing_sequence s' fs s''
     → firing_sequence s (t :: fs) s''
