@@ -18,8 +18,8 @@ For notations are the same as those used for fordward nets, but eqquiped with
 a sub-index `ᵣ`.
 
 The main property is prove that s[t⟩s' iff s'[t⟩ᵣs. And for a sequence
-seq = t₁;...;tₙ and sᵢ₋₁ [tᵢ⟩sᵢ then s₀[seq]sₙ iff sₙ[← seq]s₀, where
-← seq = tₙ;...;t₁.
+seq = t₁;...;tₙ and sᵢ₋₁ [tᵢ⟩sᵢ then s₀[[seq⟩⟩sₙ iff sₙ[[seq'⟩⟩ᵣ s₀, where
+seq' = tₙ;...;t₁.
 -/
 
 @[ext] structure revPetriNet (α : Type) (β : Type) extends (PetriNet α β) where
@@ -176,33 +176,7 @@ def Reversing.is_Firing {R : revPetriNet α β} (s s' : Set R.places)
 notation:31 lhs:31 "[" trans:32 "⟩ᵣ" rhs:33 => Reversing.is_Firing lhs trans rhs
 
 
-lemma enable_fordward_reversible (s s' : Set R.places) (t : enable s) (h : s' = firing s t)
-  : t.val ∈ Reversing.enable s' := by
-    unfold firing at h
-    unfold Reversing.enable
-    simp only [Set.mem_setOf_eq]
-    apply And.intro
-    . intros y h'
-      subst h
-      rw [Set.mem_union, Set.mem_diff, ← rev_pres_t_equal_pos_t]
-      right
-      exact h'
-    . intros y h'
-      subst h
-      rw [← rev_pres_t_equal_pos_t] at h'
-      rw [Set.mem_inter_iff, Set.mem_union,Set.mem_diff] at h'
-      have h1 : y∈ s ∧ ¬y ∈ (•ₜ↑t.val) ∨ y ∈ (•ᵣ↑t.val) := by apply And.right h'
-      cases h1
-      . rename_i h3
-        have h4 : ¬y∈ (•ₜ↑t.val) := by apply And.right h3
-        have h5 : y ∈ (•ₜ ↑t.val) := by
-          rw [rev_pos_t_equal_pres_t] at h'
-          apply And.left h'
-        contradiction
-      . rename_i h3
-        exact h3
-
-lemma enable_fordward_reversible1 (s s' : Set R.places) (t : enable s)
+lemma enable_forward_reversible (s s' : Set R.places) (t : enable s)
   (h : s' = firing s t)
   : t.val ∈  Reversing.enable s' := by
       unfold firing at h
@@ -235,89 +209,91 @@ lemma enable_fordward_reversible1 (s s' : Set R.places) (t : enable s)
           . rename_i h8
             exact h8
 
+lemma aux_subset {γ : Type} (s t v : Set γ) : (s\t)\v ∪ t = (s∪ t) ∩ (vᶜ∪ t) :=
+  calc
+    (s\t) \ v ∪ t = (s∩ tᶜ) ∩ vᶜ ∪ t    := by repeat rw [Set.diff_eq]
+                _ = s ∩ vᶜ ∩ tᶜ ∪ t     := by rw [Set.inter_right_comm]
+                _ = (s ∩ vᶜ ∪ t) ∩ (tᶜ ∪ t) := by rw [Set.union_distrib_right]
+                _ = (s∩ vᶜ∪ t) ∩ (Set.univ) := by rw [Set.compl_union_self]
+                _ = s∩ vᶜ ∪ t           := by aesop
+                _ = (s∪ t) ∩ (vᶜ∪ t)    := by rw [Set.union_distrib_right]
+
+
 /-
-The next lemma means that if s[t⟩s' then s'[t⟩ᵣs.
+The next lemma means that if s[t⟩s' then ∃ t' : transition, s'[t'⟩ᵣs.
 -/
-lemma reversing_fordward_firing (s s' : Set R.places) (en : enable s)
+lemma reversing_forward_firing (s s' : Set R.places) (en : enable s)
    (h : s' = firing s en)
-   : ∃ (h' : en.val ∈  Reversing.enable s' ), Reversing.is_firing s' h' s := by
-    have h1 := enable_fordward_reversible s s' en h
+   : ∃ (h' : en.val ∈  Reversing.enable s'), Reversing.is_firing s' h' s := by
+    have h1 := enable_forward_reversible s s' en h
     exists h1
     subst h
     unfold enable Reversing.is_firing firing Reversing.firing
-    rw [rev_pos_t_equal_pres_t, rev_pres_t_equal_pos_t]
-    simp
-    unfold enable at en 
+    unfold enable at en
     unfold Reversing.enable at h1
-    simp_all
+    simp only [Reversing.preset_t, rev_pres_t_equal_pos_t, Reversing.postset_t,
+        rev_pos_t_equal_pres_t, Set.mem_setOf_eq] at h1
+    simp only [rev_pos_t_equal_pres_t,rev_pres_t_equal_pos_t]
     unfold firing at h1
-    have h2 :  (en.val•ₜ) ⊆ s \ (•ₜ↑en) ∪ (↑en•ₜ) := by apply h1.1 
-    have h3 : (•ₜen.val) ∩ (s \ (•ₜen.val) ∪ (en.val•ₜ)) ⊆ (↑en•ₜ) := by apply h1.2
+    have h1_1 : (en.val•ₜ) ⊆ s \ (•ₜ↑en) ∪ (↑en•ₜ) := And.left h1
+    have h1_2 : (•ₜen.val) ∩ (s \ (•ₜen.val) ∪ (en.val•ₜ)) ⊆ (↑en•ₜ) := And.right h1
+    have h2: (•ₜen.val) ∩ (s \ (•ₜen.val) ∪ (en.val•ₜ)) ⊆ s \ (•ₜ↑en) ∪ (↑en•ₜ) := by
+      exact Set.inter_subset_right (•ₜen.val) (s \ (•ₜ↑en) ∪ (↑en•ₜ))
+    rw [Set.inter_subset, Set.compl_union_self] at h2 
+    let p : (t : R.transition) → Prop := λ t => (•ₜt) ⊆ s ∧ (t•ₜ) ∩ s ⊆ (•ₜt)
+    have h_en : p (Subtype.val en) := Subtype.property en
+    simp_all
+    have h_en1 : (•ₜen.val) ⊆ s := And.left h_en
+    have h_en2 :  (en.val•ₜ) ∩ s ⊆ (•ₜ↑en) := And.right h_en
     ext x
-    apply Iff.intro 
-    . intro h 
-      rw [Set.mem_union, Set.mem_diff, Set.mem_diff] at h
-      cases h with 
-      | inl => 
-          rename_i h' 
-          exact (h'.1).1
-      | inr => 
-          rename_i h'
+    constructor
+    . intro hmp
+      simp at hmp
+      cases hmp
+      . rename_i hx1 ; exact hx1.1.1 
+      . rename_i hx2 
+        exact h_en1 hx2
+    . intro hmpr
+      simp 
+      right
+      have h : s ⊆ (•ₜ↑en)∪ ((↑en•ₜ)ᶜ∩ s) := 
+        sorry
+      rw [Set.subset_def] at h
+      have h_in : x ∈ (•ₜen.val) ∪ (en.val•ₜ)ᶜ ∩ s := by apply h x hmpr
+      rw [Set.mem_union, Set.mem_inter_iff] at h_in
+      
+      sorry
+
+    /-rw [Set.Subset.antisymm_iff]
+    constructor
+    . rw [Set.diff_eq, Set.union_distrib_right]
+       
+      sorry  
+    . rw [Set.diff_eq, Set.diff_eq, Set.inter_distrib_right, Set.union_distrib_right,
+      Set.inter_compl_self, Set.union_empty, Set.union_empty]
+      intros x hx
+      by_cases h : x ∈ (•ₜen.val)
+      . right
+        exact h
+      . rw [Set.mem_union]
+        left 
+        repeat rw [Set.mem_inter_iff]
+        constructor 
+        . exact ⟨hx, h⟩
+        . simp_all 
           
           sorry
-    . sorry
-
-
-/-   simp_all
-    constructor
-    .-- unfold Reversing.is_enabled Reversing.enable
-      simp_all
-      unfold enable at en
-      rw [@Set.inter_distrib_left, Set.diff_eq, Set.inter_left_comm,
-        Set.inter_compl_self, Set.inter_empty, Set.empty_union]
-      exact Set.inter_subset_right (•ₜen.val) (en.val•ₜ)
-    . repeat rw [Set.diff_eq, Set.diff_eq]
-      unfold enable at en
-      rw [Set.setOf_set] at en
-      rename_i t'
-      have ht : (•ₜt'.val) ⊆ s ∧ (t'.val•ₜ) ∩ s ⊆ (•ₜt'.val) := by
-        simp only [Set.coe_setOf] at t'
-        cases t'
-        rename_i tr prop
-        constructor
-        . intros x h
-          simp at h
-          have h1 : (•ₜtr) ⊆ s := by apply prop.1
-          exact h1 h
-        . intros x h
-          have h2 : (tr•ₜ) ∩ s ⊆ (•ₜtr) := by apply prop.2
-          exact h2 h
-      have h1 : (•ₜt'.val) ⊆ s := by apply ht.1
-      have h2 : (t'.val•ₜ) ∩ s ⊆ (•ₜt') := by apply ht.2
-      rw [Set.inter_assoc,← @Set.compl_union]
-      have hmp : s ∩ ((•ₜ↑t') ∪ (↑t'•ₜ)ᶜ) ∪ (•ₜ↑t') ⊆ s :=
-        calc
-          s ∩ ((•ₜ↑t') ∪ (↑t'•ₜ)ᶜ) ∪ (•ₜ↑t')
-            ⊆ s ∩ ((•ₜ↑t') ∪ (↑t'•ₜ)ᶜ) ∪ s := by
-              exact Set.union_subset_union_right (s ∩ ((•ₜ↑t') ∪ (↑t'•ₜ)ᶜ)) h1
-          _ ⊆ s ∪ s := by refine Set.union_subset_union_left s (by
-              exact Set.inter_subset_left s ((•ₜ↑t') ∪ (↑t'•ₜ)ᶜ))
-          _ = s := by aesop
-      have hmpr : s ⊆ s ∩ ((•ₜ↑t') ∪ (↑t'•ₜ)ᶜ) ∪ (•ₜ↑t') :=
-        calc
-          s = s ∩ (Set.univ)    := by aesop
-          _ = s ∩((↑t'•ₜ) ∪ (↑t'•ₜ)ᶜ) := by rw [Set.union_compl_self]
-          _ = (s ∩ (↑t'•ₜ)) ∪ (s ∩ (↑t'•ₜ)ᶜ) := by exact Set.inter_distrib_left s (↑t'•ₜ) (↑t'•ₜ)ᶜ
-          _ ⊆ s ∩ ((•ₜ↑t') ∪ (↑t'•ₜ)ᶜ) ∪ (•ₜ↑t') := by sorry
-      sorry
--/
+    -/
 /-
 ** List of executions **
--/
-@[simp] def Reversing.firing_seq (s0 : Set R.places)  (l : List R.transition)
-  : List (Set R.places) :=
-  List.scanl (fun s t => Reversing.Firing s (Set.singleton t)) s0 l
 
+  A reversing firing sequence is a proposition that says us if there are a list
+of transitions t₁,...,tₙ and a list of states s₀, s₁, ... , sₙ which
+s₀[t₁⟩ᵣ = s₁, ... , sₙ₋₁[tₙ⟩ᵣ = sₙ.
+
+  We denote this by abreviation: s₀ [[T⟩⟩ᵣ sₙ , where s₀ sₙ and T = [t₁,...,tₙ]
+are given.
+-/
 @[reducible]
 inductive Reversing.firing_sequence [DecidableEq α] {R : revPetriNet α β} :
   (s : Set R.places) →  List R.transition →  (sn : Set R.places) → Prop
@@ -329,13 +305,14 @@ inductive Reversing.firing_sequence [DecidableEq α] {R : revPetriNet α β} :
 
 notation:200 ls:201 "[[" ts:202 "⟩⟩ᵣ" rs:203 => Reversing.firing_sequence ls ts rs
 
-@[simp] def Reversing.there_is_seq [DecidableEq α] {R : revPetriNet α β} (s0 sn : Set R.places) : Prop :=
+@[simp] def Reversing.there_is_seq [DecidableEq α] {R : revPetriNet α β}
+  (s0 sn : Set R.places) : Prop :=
   ∃ (l : List R.transition), Reversing.firing_sequence s0 l sn
 
 notation:10 ss:10"[*]ᵣ"ls:11 => Reversing.there_is_seq ss ls
 
---Reachable
 /-
+--Reachable
 Given a state `s`, `reach s` return all the states that can be executed by sequences of
 firing enabled.
 -/
@@ -349,7 +326,10 @@ This definition returns all the states that can be executed in a Petri net.
 def Reversing.reach_net [DecidableEq α] (R : revPetriNet α β) : Set (Set R.places) :=
   Reversing.reach R (R.m₀)
 
-
+/-
+  If we have two reversing firing sequence s[[T₁⟩⟩ᵣs' and s'[[T₂⟩⟩ᵣs'', then should
+be true s[[T₁ ++ T₂⟩⟩ᵣs''.
+-/
 lemma firing_sequence_concat [inst : DecidableEq α] (s s' s'' : Set R.places)
   (ts1 ts2 : List R.transition) (hfs1 : Reversing.firing_sequence s ts1 s')
   (hfs2 : Reversing.firing_sequence s' ts2 s'')
@@ -363,8 +343,17 @@ lemma firing_sequence_concat [inst : DecidableEq α] (s s' s'' : Set R.places)
         exact Reversing.firing_sequence.step (en1++ts2) tr1 fir1 h2
 
 
+/-
+  The principal theorem says that if a list of transitions T = [t₁,...,tₙ] satisfies
+that there are s₀,s₁,...,sₙ (with s₀ = s and sₙ = s') such that s₀[t₁⟩=s₁, ...,
+sₙ₋₁[tₙ⟩ = sₙ (with us notation of firing sequence: s[[T⟩⟩s') then the reversible
+way also is a firing sequence: ∃ T' : [t₁',...,tₙ'], s'[[T'⟩⟩ᵣs.
+
+  In this case isn't very important, but we know that T' = T.reverse, i.e., t₁' = tₙ,
+..., tₙ' = t₁.
+-/
 theorem rev_commutative [inst :  DecidableEq α] (s s' : Set R.places)
-  (T : List R.transition) (hmp : s [[T⟩⟩ s' ) : ∃ T', s' [[T'⟩⟩ᵣ s := by 
+  (T : List R.transition) (hmp : s [[T⟩⟩ s' ) : ∃ T', s' [[T'⟩⟩ᵣ s := by
       induction hmp with
       | empty s =>
           exists []
@@ -372,10 +361,10 @@ theorem rev_commutative [inst :  DecidableEq α] (s s' : Set R.places)
       | step en s₀' s₀'' tr fir fs ih =>
           rename_i s₀
           have r_fir : ∃ en', Reversing.firing s₀' en' = s₀ := by
-           exact reversing_fordward_firing s₀ s₀' en (Eq.symm fir)
-          rcases r_fir with ⟨w, wt⟩ 
+           exact reversing_forward_firing s₀ s₀' en (Eq.symm fir)
+          rcases r_fir with ⟨w, wt⟩
           rcases ih with ⟨i, it⟩
           exists i++ [en.val]
           have fs_last : s₀'[[[↑en]⟩⟩ᵣs₀ := by
-           apply Reversing.firing_sequence.step [] w wt (Reversing.firing_sequence.empty s₀) 
+           apply Reversing.firing_sequence.step [] w wt (Reversing.firing_sequence.empty s₀)
           exact firing_sequence_concat s₀'' s₀' s₀ i [en.val] it fs_last
