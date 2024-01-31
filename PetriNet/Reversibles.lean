@@ -1,6 +1,6 @@
 import PetriNet.Definitions
 import PetriNet.Occurrence
-import Mathlib.Tactic.LibrarySearch
+
 /-
 # Definitions and properties of reversible Petri Net, given a Petri Net
 
@@ -77,7 +77,9 @@ lemma revPetriNet_eq_transition (R₁ R₂ : revPetriNet α β)
   (rev_rel_tp : HEq R₁.rev_rel_tp R₂.rev_rel_tp) : R₁ = R₂ := by
     exact revPetriNet.ext R₁ R₂ places transition rel_pt rel_tp m₀ rev_rel_pt rev_rel_tp
 --------
-
+/-
+Every reversible Petri net is also a Petri net
+-/
 theorem revPetriNet_type (R : revPetriNet α β) : PetriNet α β := by
   exact R.toPetriNet
 
@@ -163,20 +165,6 @@ def Reversing.is_firing {R : revPetriNet α β} (s : Set R.places) {t : R.transi
 
 notation:26 lhs:26 "[" trans:27 "⟩ᵣ" rhs:28 => Reversing.is_firing lhs trans rhs
 
-def Reversing.Firing {R : revPetriNet α β} (s : Set R.places) (T : Set R.transition)
-  : Set R.places :=
-    (s \ (Set.sUnion {(•ᵣt) | t∈ T∩ Reversing.enable s})) ∪
-    Set.sUnion {(t•ᵣ) | t∈ T ∩ Reversing.enable s }
-
-notation:29 lhs:29 "[" rhs:30 "⟩ᵣ" => Reversing.Firing lhs rhs
-
-
-
-def Reversing.is_Firing {R : revPetriNet α β} (s s' : Set R.places)
-  (T : Set R.transition) : Prop :=
-  Reversing.Firing s T = s'
-
-notation:31 lhs:31 "[" trans:32 "⟩ᵣ" rhs:33 => Reversing.is_Firing lhs trans rhs
 
 
 lemma enable_forward_reversible (s s' : Set R.places) (t : enable s)
