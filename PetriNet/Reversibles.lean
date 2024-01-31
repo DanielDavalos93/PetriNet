@@ -116,7 +116,8 @@ def Reversing.postset_t {R : revPetriNet α β} (t : R.transition)
 postfix:2 "•ᵣ" => Reversing.postset_t
 
 @[simp]
-theorem rev_pos_t_equal_pres_t {R : revPetriNet α β} (t : R.transition) : (t •ᵣ) = (•ₜ t) :=
+theorem rev_pos_t_equal_pres_t {R : revPetriNet α β} (t : R.transition)
+: (t •ᵣ) = (•ₜ t) :=
   calc
     (t•ᵣ) = Relation.image R.rev_rel_tp t    := by rfl
        _  = {p : R.places | R.rev_rel_tp t p}:= rfl
@@ -125,7 +126,8 @@ theorem rev_pos_t_equal_pres_t {R : revPetriNet α β} (t : R.transition) : (t �
        _  = (•ₜt)                            := rfl
 
 @[simp]
-theorem rev_pres_t_equal_pos_t {R : revPetriNet α β} (t : R.transition) : (•ᵣ t) = (t •ₜ) :=
+theorem rev_pres_t_equal_pos_t {R : revPetriNet α β} (t : R.transition)
+: (•ᵣ t) = (t •ₜ) :=
   calc
     (•ᵣ t)  = Relation.pre_image R.rev_rel_pt t := by rfl
           _ = {p | R.rev_rel_pt p t}            := rfl
@@ -136,9 +138,10 @@ theorem rev_pres_t_equal_pos_t {R : revPetriNet α β} (t : R.transition) : (•
 
 /-
  ** Reversing Firing **
- First, the enable version of reversible Petri nets are analogous to the forward Petri nets.
- Second, we write `s[t⟩ᵣ = s'` for reversible firing such that s↝ s' through the transition
- t, where `s'[t⟩ = s` is the fordward version and s'↠ s.
+ First, the enable version of reversible Petri nets are analogous to the forward
+ Petri nets.
+ Second, we write `s[t⟩ᵣ = s'` for reversible firing such that s↝ s' through the
+ transition t, where `s'[t⟩ = s` is the fordward version and s'↠ s.
 -/
 
 def Reversing.enable {R : revPetriNet α β} (s : Set R.places) : Set R.transition :=
@@ -209,15 +212,26 @@ lemma enable_forward_reversible (s s' : Set R.places) (t : enable s)
           . rename_i h8
             exact h8
 
-lemma aux_subset {γ : Type} (s t v : Set γ) : (s\t)\v ∪ t = (s∪ t) ∩ (vᶜ∪ t) :=
-  calc
-    (s\t) \ v ∪ t = (s∩ tᶜ) ∩ vᶜ ∪ t    := by repeat rw [Set.diff_eq]
-                _ = s ∩ vᶜ ∩ tᶜ ∪ t     := by rw [Set.inter_right_comm]
-                _ = (s ∩ vᶜ ∪ t) ∩ (tᶜ ∪ t) := by rw [Set.union_distrib_right]
-                _ = (s∩ vᶜ∪ t) ∩ (Set.univ) := by rw [Set.compl_union_self]
-                _ = s∩ vᶜ ∪ t           := by aesop
-                _ = (s∪ t) ∩ (vᶜ∪ t)    := by rw [Set.union_distrib_right]
 
+@[simp]
+lemma aux_diff {γ : Type} (a b c : Set γ) (h:c ∩ a ⊆ b ) : (a \ b) \ c = a \ b := by
+  rw [Set.diff_diff, Set.diff_eq, Set.diff_eq, Set.compl_union]
+  have h1 : a ∩ b ∩ c = a ∩ c :=
+    calc
+      a ∩ b ∩ c = (a ∩ c) ∩ b := by rw [Set.inter_right_comm]
+        _ = (a ∩ c) ∩ (a ∩ c) := by
+          rw [Set.inter_comm] at h
+          aesop
+        _ = a ∩ c           := by aesop
+  have h2 : (a ∩ b ∩ c) ∪ (a ∩ cᶜ) = (a ∩ c) ∪ (a ∩ cᶜ) := by
+    exact congrFun (congrArg Union.union h1) (a ∩ cᶜ)
+  rw [Set.inter_union_compl] at h2
+  have h3 : (a ∩ b ∩ c ∪ a ∩ cᶜ) ∩ bᶜ = a ∩ bᶜ := by
+    exact congrFun (congrArg Inter.inter h2) (bᶜ)
+  rw [Set.inter_distrib_right, Set.inter_right_comm, Set.inter_assoc a b,
+    Set.inter_compl_self, Set.inter_empty, Set.empty_inter, Set.empty_union,
+    Set.inter_right_comm, Set.inter_assoc] at h3
+  exact h3
 
 /-
 The next lemma means that if s[t⟩s' then ∃ t' : transition, s'[t'⟩ᵣs.
@@ -235,55 +249,14 @@ lemma reversing_forward_firing (s s' : Set R.places) (en : enable s)
         rev_pos_t_equal_pres_t, Set.mem_setOf_eq] at h1
     simp only [rev_pos_t_equal_pres_t,rev_pres_t_equal_pos_t]
     unfold firing at h1
-    have h1_1 : (en.val•ₜ) ⊆ s \ (•ₜ↑en) ∪ (↑en•ₜ) := And.left h1
-    have h1_2 : (•ₜen.val) ∩ (s \ (•ₜen.val) ∪ (en.val•ₜ)) ⊆ (↑en•ₜ) := And.right h1
     have h2: (•ₜen.val) ∩ (s \ (•ₜen.val) ∪ (en.val•ₜ)) ⊆ s \ (•ₜ↑en) ∪ (↑en•ₜ) := by
       exact Set.inter_subset_right (•ₜen.val) (s \ (•ₜ↑en) ∪ (↑en•ₜ))
-    rw [Set.inter_subset, Set.compl_union_self] at h2 
+    rw [Set.inter_subset, Set.compl_union_self] at h2
     let p : (t : R.transition) → Prop := λ t => (•ₜt) ⊆ s ∧ (t•ₜ) ∩ s ⊆ (•ₜt)
     have h_en : p (Subtype.val en) := Subtype.property en
     simp_all
-    have h_en1 : (•ₜen.val) ⊆ s := And.left h_en
-    have h_en2 :  (en.val•ₜ) ∩ s ⊆ (•ₜ↑en) := And.right h_en
-    ext x
-    constructor
-    . intro hmp
-      simp at hmp
-      cases hmp
-      . rename_i hx1 ; exact hx1.1.1 
-      . rename_i hx2 
-        exact h_en1 hx2
-    . intro hmpr
-      simp 
-      right
-      have h : s ⊆ (•ₜ↑en)∪ ((↑en•ₜ)ᶜ∩ s) := 
-        sorry
-      rw [Set.subset_def] at h
-      have h_in : x ∈ (•ₜen.val) ∪ (en.val•ₜ)ᶜ ∩ s := by apply h x hmpr
-      rw [Set.mem_union, Set.mem_inter_iff] at h_in
-      
-      sorry
 
-    /-rw [Set.Subset.antisymm_iff]
-    constructor
-    . rw [Set.diff_eq, Set.union_distrib_right]
-       
-      sorry  
-    . rw [Set.diff_eq, Set.diff_eq, Set.inter_distrib_right, Set.union_distrib_right,
-      Set.inter_compl_self, Set.union_empty, Set.union_empty]
-      intros x hx
-      by_cases h : x ∈ (•ₜen.val)
-      . right
-        exact h
-      . rw [Set.mem_union]
-        left 
-        repeat rw [Set.mem_inter_iff]
-        constructor 
-        . exact ⟨hx, h⟩
-        . simp_all 
-          
-          sorry
-    -/
+
 /-
 ** List of executions **
 
@@ -326,6 +299,7 @@ This definition returns all the states that can be executed in a Petri net.
 def Reversing.reach_net [DecidableEq α] (R : revPetriNet α β) : Set (Set R.places) :=
   Reversing.reach R (R.m₀)
 
+
 /-
   If we have two reversing firing sequence s[[T₁⟩⟩ᵣs' and s'[[T₂⟩⟩ᵣs'', then should
 be true s[[T₁ ++ T₂⟩⟩ᵣs''.
@@ -344,13 +318,13 @@ lemma firing_sequence_concat [inst : DecidableEq α] (s s' s'' : Set R.places)
 
 
 /-
-  The principal theorem says that if a list of transitions T = [t₁,...,tₙ] satisfies
+  The main theorem says that if a list of transitions T = [t₁,...,tₙ] satisfies
 that there are s₀,s₁,...,sₙ (with s₀ = s and sₙ = s') such that s₀[t₁⟩=s₁, ...,
 sₙ₋₁[tₙ⟩ = sₙ (with us notation of firing sequence: s[[T⟩⟩s') then the reversible
 way also is a firing sequence: ∃ T' : [t₁',...,tₙ'], s'[[T'⟩⟩ᵣs.
 
-  In this case isn't very important, but we know that T' = T.reverse, i.e., t₁' = tₙ,
-..., tₙ' = t₁.
+  In this case isn't very important, but we know that T' = T.reverse, i.e.,
+  t₁' = tₙ,..., tₙ' = t₁.
 -/
 theorem rev_commutative [inst :  DecidableEq α] (s s' : Set R.places)
   (T : List R.transition) (hmp : s [[T⟩⟩ s' ) : ∃ T', s' [[T'⟩⟩ᵣ s := by
