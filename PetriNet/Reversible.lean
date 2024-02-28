@@ -48,11 +48,11 @@ def change_orientation (t : β × Transition) : Transition :=
     | backward => forward
 
 @[simp]
-def fw_emb : β ↪ β × Transition :=
+def fw_emb {β : Type} : β ↪ β × Transition :=
   {toFun := fun t => ⟨t, forward⟩, inj' := by exact Prod.mk.inj_right forward}
 
 @[simp]
-def bw_emb : β ↪ β × Transition :=
+def bw_emb {β : Type} : β ↪ β × Transition :=
   {toFun := fun t => ⟨t, backward⟩, inj' := by exact Prod.mk.inj_right backward}
 
 
@@ -175,18 +175,45 @@ lemma fw_bw_disjoint (T : Finset β) : Disjoint (Finset.map fw_emb T) (Finset.ma
 def revTrans (T : Finset β) : Finset (β × Transition) :=
   Finset.disjUnion (Finset.map fw_emb T) (Finset.map bw_emb T) (fw_bw_disjoint T)
 
+def revTrans.val {T : Finset β} (x : revTrans T) : T := by
+
+  sorry
+
+lemma revTrans.val1 {T : Finset β} (x : revTrans T) : (revTrans.val x).val = x.val.1 := by
+  sorry
 
 @[simp]
 def revPetriNet (P : PetriNet α β) : PetriNet α (β × Transition) := {
  places := P.places
  transition := revTrans (P.transition)
  rel_pt :=  λ (p : P.places) (t : revTrans (P.transition)) =>
-  sorry
+  match t.val with
+  | (_,forward) => P.rel_pt p (revTrans.val t)
+  | (_, backward) => P.rel_tp (revTrans.val t) p
  rel_tp :=  λ (t : revTrans P.transition) (p : P.places) =>
-  sorry
+  match t.val with
+  | (_, forward) => P.rel_tp (revTrans.val t) p
+  | (_, backward) => P.rel_pt p (revTrans.val t)
  m₀ := P.m₀
 }
 
+def revTrans_t {P : PetriNet α β} (t : P.transition) : (revPetriNet P).transition := by sorry
+
+lemma rev_is_enabled (P : PetriNet α β) (s : Set P.places) (t : P.transition)
+  (h : is_enabled s t) : is_enabled (N := revPetriNet P) s (revTrans_t t) := by
+  sorry
+
+
+lemma rev_enable (P : PetriNet α β) (s : Set P.places) (t : enable s)
+  : enable (n := revPetriNet P) s := by
+  sorry
+
+lemma rev_firing (P : PetriNet α β) (s : Set P.places) (t : enable s) (h : firing s t)
+  : firing (n:= revPetriNet P) s (rev_enable P s t) := by
+  sorry
+
+lemma firing_fw_bw (P : PetriNet α β) (s s' : Set P.places) (t : enable s) (t' : enable s')
+  (h : is_firing s t s') : is_firing (N := revPetriNet P) s' (rev_enable P s' t') s := by sorry
 
 open Nat
 open String
