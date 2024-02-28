@@ -25,6 +25,7 @@ seq' = tₙ;...;t₁.
 @[ext] structure revPetriNet (α : Type) (β : Type) extends (PetriNet α β) where
   rev_rel_pt : places →  transition →  Prop
   rev_rel_tp : transition →  places →  Prop
+--predicado
 
 variable {α β : Type} {R : revPetriNet α β}
 

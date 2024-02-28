@@ -1,6 +1,7 @@
 import Mathlib.Data.Multiset.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Set.Basic
+import Mathlib.Data.Multiset.Basic
 import Mathlib.Data.List.Basic
 /-!
 # Basic definitions of Petri Net
@@ -84,16 +85,16 @@ def is_initial {n : PetriNet α β} (s : Set n.places) : Prop :=
 def is_final {n : PetriNet α β} (s : Set n.places) : Prop :=
   IsEmpty (Set.sUnion {(x •ₚ) | x ∈  s})
 
-/-!
+/--
 # Enabled transitions
 Given a state `s`, `enable s` returns the set of transitions that could be execute. The
 plan is that s -> t don't have problem.
 -/
 def enable {n : PetriNet α β} (s : Set n.places) : Set n.transition :=
- {t : n.transition | (•ₜ t) ⊆ s ∧ (t •ₜ)∩ s ⊆ (•ₜ t)}
+ {t : n.transition | (•ₜ t) ⊆ s ∧ (t•ₜ)∩ s ⊆ (•ₜt)}
 
-def is_enabled {N : PetriNet α β} (m : Set N.places) (t : N.transition) : Prop :=
-    t ∈  enable m
+def is_enabled {N : PetriNet α β} (s : Set N.places) (t : N.transition) : Prop :=
+    t ∈  enable s
 
 lemma preset_implies_enable (N : PetriNet α β) (s : Set N.places) (t : N.transition) :
   t ∈ enable s → (•ₜ t) ⊆ s := by
@@ -101,7 +102,7 @@ lemma preset_implies_enable (N : PetriNet α β) (s : Set N.places) (t : N.trans
   unfold enable at h_enable
   exact h_enable.left
 
-/-
+/--
 # Deadlock
 A deadlock is when there is no transitions enabled for a state `s`.
 In this case the execution are no possible.
@@ -200,17 +201,13 @@ def init {α : Type} (l : List α) : List α :=
   ((l.reverse).tail).reverse
 
 --List of executions
-/-`firing_seq s0 l` ask for a list of transitions `l` and an initial state `s0` (this
+/--`firing_sequence s0 l sn` asks for a list of transitions `l` and an initial state `s0` (this
 initial state is not necessarily the same as the initial state of a Petri net `m₀`) and
 returns a list of states, whenever they are enabled in their respective executions.
-Such as: l=[t1,t2], s0={p1,p2}, s1=s[t1⟩={p3,p2} y s2=s[t2⟩={p3,p4} then
-`firing_seq s0 l = [s1,s2]`
--/
-/-@[simp] def firing_seq {N : PetriNet α β} (s0 : Set N.places)  (l : List N.transition)
-  : List (Set N.places) :=
-  List.scanl (fun s t => Firing s (Set.singleton t)) s0 l
--/
 
+Such as: `l=[t1,t2]`, `s0={p1,p2}`, `s1=s[t1⟩={p3,p2}` and `s2=s[t2⟩={p3,p4}` then
+`firing_sequence s0 l [s1,s2] = True`.
+-/
 inductive firing_sequence [DecidableEq α] {N : PetriNet α β} : (s : Set N.places) →
   List N.transition →  (sn : Set N.places) → Prop
   | empty : ∀ s, firing_sequence s [] s
@@ -220,17 +217,6 @@ inductive firing_sequence [DecidableEq α] {N : PetriNet α β} : (s : Set N.pla
 
 notation:200 ls:201 "[[" ts:202 "⟩⟩" lss:203 => firing_sequence ls ts lss
 
---Concatenation of executions
-/-`firing_concat l s0` asks for a list `l` and an initial state `s0` and returns the last
-state of that sequence, whenever they are enabled.
-With the previous example:
-`firing l s0 = s2`
--/
-/-@[simp] def firing_concat {N : PetriNet α β} (s0 : Set N.places) (l : List N.transition)
-  : Set N.places :=
-  List.get! (firing_seq s0 l) ((List.length (firing_seq s0 l))-1)
--/
-
 @[simp]
 def there_is_seq [DecidableEq α] {N : PetriNet α β} (s0 : Set N.places) (sn : Set N.places)
   : Prop :=
@@ -239,14 +225,14 @@ def there_is_seq [DecidableEq α] {N : PetriNet α β} (s0 : Set N.places) (sn :
 notation:210 ss:211"[*]"ls:212 => there_is_seq ss ls
 
 --Reachable
-/-
+/--
 Given a state `s`, `reach s` return all the states that can be executed by sequences of
 firing enabled.
 -/
 def reach [DecidableEq α] (N : PetriNet α β) (s : Set N.places) : Set (Set N.places) :=
   {s' | s[*]s'}
 
-/- A special case, when the state initial is `m₀`.
+/-- A special case, when the state initial is `m₀`.
 This definition returns all the states that can be executed in a Petri net.
 -/
 def reach_net [DecidableEq α] (N : PetriNet α β) : Set (Set N.places) :=

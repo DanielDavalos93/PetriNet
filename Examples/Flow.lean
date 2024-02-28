@@ -1,7 +1,7 @@
 import PetriNet
 open Nat
 open Sum
-
+open Set
 
 lemma inFS {n m : ℕ} (h : LT.lt n m) : n ∈ Finset.range m :=
    Finset.mem_range.mpr h
