@@ -57,20 +57,20 @@ def Relation.image {α β : Type} (r : α →  β →  Prop) (a : α) : Set β :
 def Relation.pre_image {α β : Type} (r : α → β → Prop) (b : β) : Set α :=
     {a : α | r a b}
 
-def preset_p {n : PetriNet α β} (p : n.places) : Set n.transition  :=
-  Relation.pre_image n.rel_tp p
+def preset_p {P : PetriNet α β} (p : P.places) : Set P.transition  :=
+  Relation.pre_image P.rel_tp p
 
-def preset_t {n : PetriNet α β} (t : n.transition) : Set n.places :=
-  Relation.pre_image n.rel_pt t
+def preset_t {P : PetriNet α β} (t : P.transition) : Set P.places :=
+  Relation.pre_image P.rel_pt t
 
 prefix:1 "•ₚ" => preset_p
 prefix:2 "•ₜ" => preset_t
 
-def poset_p {n : PetriNet α β} (p : n.places) : Set n.transition :=
-  Relation.image n.rel_pt p
+def poset_p {P : PetriNet α β} (p : P.places) : Set P.transition :=
+  Relation.image P.rel_pt p
 
-def poset_t {n : PetriNet α β} (t : n.transition) : Set n.places :=
-  Relation.image n.rel_tp t
+def poset_t {P : PetriNet α β} (t : P.transition) : Set P.places :=
+  Relation.image P.rel_tp t
 
 postfix:1 "•ₚ" => poset_p
 postfix:2 "•ₜ" => poset_t
@@ -79,10 +79,10 @@ postfix:2 "•ₜ" => poset_t
 Next definitions say if the state doesn't have any transition before (is_initial) or
 after (is_final)
 -/
-def is_initial {n : PetriNet α β} (s : Set n.places) : Prop :=
+def is_initial {P : PetriNet α β} (s : Set P.places) : Prop :=
   IsEmpty (Set.sUnion {(•ₚ x) | x ∈  s})
 
-def is_final {n : PetriNet α β} (s : Set n.places) : Prop :=
+def is_final {P : PetriNet α β} (s : Set P.places) : Prop :=
   IsEmpty (Set.sUnion {(x •ₚ) | x ∈  s})
 
 /--
@@ -90,13 +90,13 @@ def is_final {n : PetriNet α β} (s : Set n.places) : Prop :=
 Given a state `s`, `enable s` returns the set of transitions that could be execute. The
 plan is that s -> t don't have problem.
 -/
-def enable {n : PetriNet α β} (s : Set n.places) : Set n.transition :=
- {t : n.transition | (•ₜ t) ⊆ s ∧ (t•ₜ)∩ s ⊆ (•ₜt)}
+def enable {P : PetriNet α β} (s : Set P.places) : Set P.transition :=
+ {t : P.transition | (•ₜ t) ⊆ s ∧ (t•ₜ)∩ s ⊆ (•ₜt)}
 
-def is_enabled {N : PetriNet α β} (s : Set N.places) (t : N.transition) : Prop :=
+def is_enabled {P : PetriNet α β} (s : Set P.places) (t : P.transition) : Prop :=
     t ∈  enable s
 
-lemma preset_implies_enable (N : PetriNet α β) (s : Set N.places) (t : N.transition) :
+lemma preset_implies_enable (P : PetriNet α β) (s : Set P.places) (t : P.transition) :
   t ∈ enable s → (•ₜ t) ⊆ s := by
   intros h_enable
   unfold enable at h_enable
@@ -107,22 +107,22 @@ lemma preset_implies_enable (N : PetriNet α β) (s : Set N.places) (t : N.trans
 A deadlock is when there is no transitions enabled for a state `s`.
 In this case the execution are no possible.
 -/
-def deadlock {n : PetriNet α β} (s : Set n.places) : Prop :=
+def deadlock {P : PetriNet α β} (s : Set P.places) : Prop :=
   IsEmpty (enable s)
 
 -- Firing
-def firing {n : PetriNet α β} (s : Set n.places) (t : enable (s)) : Set n.places :=
+def firing {P : PetriNet α β} (s : Set P.places) (t : enable (s)) : Set P.places :=
   (s \ (•ₜ t) ) ∪ (t •ₜ)
 
 notation:2 lhs:3 "[" rhs:4 "⟩" => firing lhs rhs
 
-def is_firing {N : PetriNet α β} (s : Set N.places) (t : enable s) (s' : Set N.places) : Prop :=
+def is_firing {P : PetriNet α β} (s : Set P.places) (t : enable s) (s' : Set P.places) : Prop :=
   firing s t = s'
 
 notation:5 ls:5 "[" ts:6 "⟩" ls':7 => is_firing ls ts ls'
 
 -- Firing as a set
-def Firing {n : PetriNet α β} (s : Set n.places) (T : Set n.transition) : Set n.places :=
+def Firing {P : PetriNet α β} (s : Set P.places) (T : Set P.transition) : Set P.places :=
   (s \ (Set.sUnion {(•ₜ t) | t∈ T ∩ enable (s)})) ∪
   (Set.sUnion {(t •ₜ) | t∈ T ∩ enable (s)})
 
@@ -181,8 +181,7 @@ lemma no_enable_poset_to_emp {N : PetriNet α β} (s : Set N.places) (t : N.tran
     calc {(y •ₜ) | y∈ {↑t}∩ enable (s)} = ∅  := by apply IsEmpty_to_empty _ h1
 
 
-/-
-This theorem says that if a transition `t` isn't enabled in a state `s` then the execution
+/--This theorem says that if a transition `t` isn't enabled in a state `s` then the execution
 on `firing s t` is the identity (i.e. there is no execution)
 -/
 theorem no_enable_to_id {N : PetriNet α β} (s : Set N.places) (t : N.transition)
@@ -208,8 +207,8 @@ returns a list of states, whenever they are enabled in their respective executio
 Such as: `l=[t1,t2]`, `s0={p1,p2}`, `s1=s[t1⟩={p3,p2}` and `s2=s[t2⟩={p3,p4}` then
 `firing_sequence s0 l [s1,s2] = True`.
 -/
-inductive firing_sequence [DecidableEq α] {N : PetriNet α β} : (s : Set N.places) →
-  List N.transition →  (sn : Set N.places) → Prop
+inductive firing_sequence [DecidableEq α] {P : PetriNet α β} : (s : Set P.places) →
+  List P.transition →  (sn : Set P.places) → Prop
   | empty : ∀ s, firing_sequence s [] s
   | step : ∀ t s' s'' fs, (is_firing s t s')
     → firing_sequence s' fs s''
@@ -218,9 +217,9 @@ inductive firing_sequence [DecidableEq α] {N : PetriNet α β} : (s : Set N.pla
 notation:200 ls:201 "[[" ts:202 "⟩⟩" lss:203 => firing_sequence ls ts lss
 
 @[simp]
-def there_is_seq [DecidableEq α] {N : PetriNet α β} (s0 : Set N.places) (sn : Set N.places)
+def there_is_seq [DecidableEq α] {P : PetriNet α β} (s0 : Set P.places) (sn : Set P.places)
   : Prop :=
-  ∃ l : List N.transition, firing_sequence s0 l sn
+  ∃ l : List P.transition, firing_sequence s0 l sn
 
 notation:210 ss:211"[*]"ls:212 => there_is_seq ss ls
 

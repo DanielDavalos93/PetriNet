@@ -1,6 +1,8 @@
 import PetriNet.Definitions
 import PetriNet.Occurrence
 import Mathlib.Data.Finset.Image
+import Mathlib.Data.Finset.Preimage
+import Mathlib.Data.Finset.Prod
 /-
 # Definitions and properties of reversible Petri Net, given a Petri Net
 
@@ -23,7 +25,9 @@ seq = t₁;...;tₙ and sᵢ₋₁ [tᵢ⟩sᵢ then s₀[seq]sₙ iff sₙ[← 
 -/
 
 variable {α β : Type}
-/--`Transition` is a type to give orientation on a Petri net's transition.
+
+/--`Transition` is a type to give orientation on a Petri net's transition, which
+are `forward` and `backward`.
 -/
 inductive Transition where
   | forward : Transition
@@ -54,6 +58,11 @@ def fw_emb {β : Type} : β ↪ β × Transition :=
 @[simp]
 def bw_emb {β : Type} : β ↪ β × Transition :=
   {toFun := fun t => ⟨t, backward⟩, inj' := by exact Prod.mk.inj_right backward}
+
+def fw_bw_emb {t : Transition} : β ↪ β × Transition :=
+    match t with
+    | forward => fw_emb
+    | backward => bw_emb
 
 
 --EXAMPLE
@@ -148,14 +157,6 @@ lemma self_reverse (t : β × Transition) : t ↭ (↝ t) := by
   simp_all
 
 
-/-@[ext]
-structure revPetriNet (α : Type) (β :Type) extends PetriNet α (β × Transition) where
-  condition : ∀ t t' : toPetriNet.transition × Transition, t ↭ t' →  (•ₜt.fst) = (t'.fst•ₜ)
-
-
-lemma reverse_firing {P : revPetriNet α β} (s s' : Set P.places)
-  (t : enable s) (hf : is_firing s t s') : (h' : enable s') →  is_firing s' h' s := by sorry
--/
 @[simp]
 lemma fw_bw_disjoint (T : Finset β) : Disjoint (Finset.map fw_emb T) (Finset.map bw_emb T) := by
   unfold Disjoint
@@ -171,17 +172,32 @@ lemma fw_bw_disjoint (T : Finset β) : Disjoint (Finset.map fw_emb T) (Finset.ma
     exact ts_not_fwd_and_bwd (w, forward) (w', backward) trivial trivial
   simp_all
 
-
+/--`revTrans (T)` is the disjoint union of `T` which for each element
+`x ∈ revTrans (T)`, `x = (t,forward)` or `x = (t,backward)`.
+-/
 def revTrans (T : Finset β) : Finset (β × Transition) :=
   Finset.disjUnion (Finset.map fw_emb T) (Finset.map bw_emb T) (fw_bw_disjoint T)
 
-def revTrans.val {T : Finset β} (x : revTrans T) : T := by
+theorem revTrans.singleton {t : β} {tr : Transition} (h : revTrans {t}) : β × Transition := by
+  unfold revTrans at h
+  exact ~>(fw_bw_emb (t := tr) t)
 
-  sorry
+lemma revTrans.fst_in (T : Finset β) (x : revTrans T) : x.val.fst ∈ T.val := by
+sorry
 
-lemma revTrans.val1 {T : Finset β} (x : revTrans T) : (revTrans.val x).val = x.val.1 := by
-  sorry
+def revTrans.val {T : Finset β} (x : revTrans T) : T :=
+  { val := x.val.1, property := by exact Iff.mp Finset.mem_val (revTrans.fst_in T x)}
 
+
+lemma revTrans.val_fst {T : Finset β} (x : revTrans T) : (revTrans.val x ).val = x.val.1 := by
+  rfl
+
+/--
+  # Reversible Petri net
+  `revPetriNet` is the same definition of a `P : PetriNet α β`, but specifically
+  the transition `t` in `P` are now the form `(t,fw|bw)`. This new net, given `P`,
+  has the type `: PetriNet α (β × Transition)`.
+-/
 @[simp]
 def revPetriNet (P : PetriNet α β) : PetriNet α (β × Transition) := {
  places := P.places
@@ -197,23 +213,23 @@ def revPetriNet (P : PetriNet α β) : PetriNet α (β × Transition) := {
  m₀ := P.m₀
 }
 
-def revTrans_t {P : PetriNet α β} (t : P.transition) : (revPetriNet P).transition := by sorry
+def revTrans_singleton {P : PetriNet α β} (t : P.transition) : (revPetriNet P).transition := by sorry
 
 lemma rev_is_enabled (P : PetriNet α β) (s : Set P.places) (t : P.transition)
-  (h : is_enabled s t) : is_enabled (N := revPetriNet P) s (revTrans_t t) := by
+  (h : is_enabled s t) : is_enabled (P := revPetriNet P) s (revTrans_singleton t) := by
   sorry
 
 
 lemma rev_enable (P : PetriNet α β) (s : Set P.places) (t : enable s)
-  : enable (n := revPetriNet P) s := by
+  : enable (P := revPetriNet P) s := by
   sorry
 
 lemma rev_firing (P : PetriNet α β) (s : Set P.places) (t : enable s) (h : firing s t)
-  : firing (n:= revPetriNet P) s (rev_enable P s t) := by
+  : firing (P := revPetriNet P) s (rev_enable P s t) := by
   sorry
 
 lemma firing_fw_bw (P : PetriNet α β) (s s' : Set P.places) (t : enable s) (t' : enable s')
-  (h : is_firing s t s') : is_firing (N := revPetriNet P) s' (rev_enable P s' t') s := by sorry
+  (h : is_firing s t s') : is_firing (P := revPetriNet P) s' (rev_enable P s' t') s := by sorry
 
 open Nat
 open String
